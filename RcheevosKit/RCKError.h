@@ -1,0 +1,62 @@
+//
+//  RCKError.h
+//  RcheevosKit
+//
+//  Created by C.W. Betts on 9/2/23.
+//
+
+#import <Foundation/Foundation.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+#ifndef RTK_ERROR_ENUM
+#define __RTK_ERROR_ENUM_GET_MACRO(_0, _1, _2, NAME, ...) NAME
+#if ((__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))) && __has_attribute(ns_error_domain)
+#define __RTK_NAMED_ERROR_ENUM(_type, _domain, _name)     enum _name : _type _name; enum __attribute__((ns_error_domain(_domain))) _name : _type
+#define __RTK_ANON_ERROR_ENUM(_type, _domain)             enum __attribute__((ns_error_domain(_domain))) : _type
+#else
+#define __RTK_NAMED_ERROR_ENUM(_type, _domain, _name) NS_ENUM(_type, _name)
+#define __RTK_ANON_ERROR_ENUM(_type, _domain) NS_ENUM(_type)
+#endif
+
+#define RTK_ERROR_ENUM(...) __RTK_ERROR_ENUM_GET_MACRO(__VA_ARGS__, __RTK_NAMED_ERROR_ENUM, __RTK_ANON_ERROR_ENUM)(__VA_ARGS__)
+#endif
+
+
+FOUNDATION_EXPORT NSErrorDomain const RCKErrorDomain;
+typedef RTK_ERROR_ENUM(int, RCKErrorDomain, RCKError) {
+	RCKErrorInvalidLuaOperand = -1,
+	RCKErrorInvalidMemoryOperand = -2,
+	RCKErrorInvalidConstOperand = -3,
+	RCKErrorInvalidFPOperand = -4,
+	RCKErrorInvalidConditionType = -5,
+	RCKErrorInvalidOperator = -6,
+	RCKErrorInvalidRequiredHits = -7,
+	RCKErrorDuplicatedStart = -8,
+	RCKErrorDuplicatedCancel = -9,
+	RCKErrorDuplicatedSubmit = -10,
+	RCKErrorDuplicatedValue = -11,
+	RCKErrorDuplicatedProgress = -12,
+	RCKErrorMissingStart = -13,
+	RCKErrorMissingCancel = -14,
+	RCKErrorMissingSubmig = -15,
+	RCKErrorMissingValue = -16,
+	RCKErrorInvalidLeaderboardField = -17,
+	RCKErrorMissingDisplayString = -18,
+	RCKErrorOutOfMemory = -19,
+	RCKErrorInvalidValueFlag = -20,
+	RCKErrorMissingValueMeasured = -21,
+	RCKErrorMultipleMeasured = -22,
+	RCKErrorInvalidMeasuredTarget = -23,
+	RCKErrorInvalidComparison = -24,
+	RCKErrorInvalidState = -25,
+	RCKErrorInvalidJSON = -26,
+	RCKErrorAPIFailure = -27,
+	RCKErrorLoginRequired = -28,
+	RCKErrorNoGameLoaded = -29,
+	RCKErrorHardcoreDisabled = -30,
+	RCKErrorAborted = -31,
+	RCKErrorNoResponse = -32
+};
+
+NS_ASSUME_NONNULL_END

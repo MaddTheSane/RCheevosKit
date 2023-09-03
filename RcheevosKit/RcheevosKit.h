@@ -13,6 +13,6 @@ FOUNDATION_EXPORT double RcheevosKitVersionNumber;
 //! Project version string for RcheevosKit.
 FOUNDATION_EXPORT const unsigned char RcheevosKitVersionString[];
 
-// In this header, you should import all the public headers of your framework using statements like #import <RcheevosKit/PublicHeader.h>
-
-
+#import <RcheevosKit/RCKConsoles.h>
+#import <RcheevosKit/RCKError.h>
+#import <RcheevosKit/RCKClientAchievement.h>
