@@ -62,8 +62,7 @@ public class Client: NSObject {
 	
 	private func serverCallback(request: UnsafePointer<rc_api_request_t>?,
 								callback: rc_client_server_callback_t?,
-								callback_data: UnsafeMutableRawPointer?,
-								client: OpaquePointer?) {
+								callback_data: UnsafeMutableRawPointer?) {
 		guard let theURL = URL(string: String(cString: request!.pointee.url)) else {
 			var server_response = rc_api_server_response_t()
 			server_response.body = nil
@@ -149,7 +148,7 @@ public class Client: NSObject {
 				return
 			}
 			let theClass: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-			theClass.serverCallback(request: request, callback: callback, callback_data: callbackData, client: client)
+			theClass.serverCallback(request: request, callback: callback, callback_data: callbackData)
 		})
 		
 		rc_client_set_userdata(_client, Unmanaged.passUnretained(self).toOpaque())
@@ -242,6 +241,9 @@ public class Client: NSObject {
 		}
 	}
 	
+	/// Informs the runtime that the emulator has been reset.
+	///
+	/// Will reset all achievements and leaderboards to their initial state (includes hiding indicators/trackers).
 	public func reset() {
 		rc_client_reset(_client)
 	}
@@ -257,16 +259,17 @@ public class Client: NSObject {
 		delegate?.gotAchievement?(client: self, ach, urlForIcon: actualURL)
 	}
 	
-	public func attach() {
-		
-	}
-	
+	/// Processes achievements for the current frame.
+	///
 	/// Call every frame!
 	public func doFrame() {
 		rc_client_do_frame(_client)
 	}
 	
-	/// Call when paused.
+	/// Processes the periodic queue.
+	///
+	/// Called internally by `rc_client_do_frame`. Should be explicitly called if `doFrame()`
+	/// is not being called because emulation is paused.
 	public func idling() {
 		rc_client_idle(_client)
 	}
@@ -311,8 +314,7 @@ public class Client: NSObject {
 		}
 	}
 	
-	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?, client: OpaquePointer!) {
-		// on success, do nothing
+	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) {
 		if result == RC_OK {
 			delegate?.gameChangedSuccessfully?(client: self)
 			return
@@ -333,12 +335,12 @@ public class Client: NSObject {
 	@objc(changeMediaToURL:)
 	public func changeMedia(to url: URL) {
 		_ = url.withUnsafeFileSystemRepresentation { up in
-			rc_client_begin_change_media(_client, up, nil, 0, { result, errorMessage, client, userData in
+			return rc_client_begin_change_media(_client, up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
 				}
 				let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-				aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage, client: client)
+				aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage)
 			}, nil)
 		}
 	}
@@ -346,12 +348,12 @@ public class Client: NSObject {
 	@objc(changeMediaToData:)
 	public func changeMedia(to data: Data) {
 		_ = data.withUnsafeBytes { urbp in
-			rc_client_begin_change_media(_client, nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, userData in
+			return rc_client_begin_change_media(_client, nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
 				}
 				let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-				aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage, client: client)
+				aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage)
 			}, nil)
 		}
 	}
@@ -386,13 +388,13 @@ public class Client: NSObject {
 		}
 		
 		guard result == RC_OK else {
-			throw RCKError(RCKError.Code(rawValue: result)!)
+			throw RCKError(RCKError.Code(rawValue: result) ?? .invalidState)
 		}
 	}
 	
 	// MARK: - User Account stuff
 	
-	private func loginCallback(result: Int32, errorMessage: UnsafePointer<CChar>?, client: OpaquePointer?) {
+	private func loginCallback(result: Int32, errorMessage: UnsafePointer<CChar>?) {
 		if result == RC_OK {
 			delegate?.loginSuccessful?(client: self)
 		} else {
@@ -408,12 +410,12 @@ public class Client: NSObject {
 	public func loginWith(userName: String, password: String) {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
-		rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, client, userdata in
+		rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, client, _ in
 			guard let usrDat = rc_client_get_userdata(client) else {
 				return
 			}
 			let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-			aSelf.loginCallback(result: result, errorMessage: errorMessage, client: client)
+			aSelf.loginCallback(result: result, errorMessage: errorMessage)
 		}, nil)
 	}
 	
@@ -421,12 +423,12 @@ public class Client: NSObject {
 		// This is exactly the same functionality as rc_client_begin_login_with_password, but
 		// uses the token captured from the first login instead of a password.
 		// Note that it uses the same callback.
-		rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, client, userdata in
+		rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, client, _ in
 			guard let usrDat = rc_client_get_userdata(client) else {
 				return
 			}
 			let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-			aSelf.loginCallback(result: result, errorMessage: errorMessage, client: client)
+			aSelf.loginCallback(result: result, errorMessage: errorMessage)
 		}, nil)
 	}
 	
