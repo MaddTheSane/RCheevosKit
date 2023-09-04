@@ -447,14 +447,101 @@ public class Client: NSObject {
 		return String(cString: cToken)
 	}
 	
-	// MARK: -
+	@objc(RCKClientUserInfo) @objcMembers
+	public class UserInfo: NSObject {
+		public let displayName: String
+		public let userName: String
+		public let token: String
+		public let score: UInt32
+		public let softcoreScore: UInt32
+		public let countOfUnreadMessages: UInt32
+		public let iconURL: URL?
+
+		fileprivate init(user hi: UnsafePointer<rc_client_user_t>) {
+			displayName = String(cString: hi.pointee.display_name)
+			userName = String(cString: hi.pointee.username)
+			token = String(cString: hi.pointee.token)
+			score = hi.pointee.score
+			softcoreScore = hi.pointee.score_softcore
+			countOfUnreadMessages = hi.pointee.num_unread_messages
+			
+			do {
+				var trueURL: URL? = nil
+				var cUrl = [CChar](repeating: 0, count: 512)
+				if rc_client_user_get_image_url(hi, &cUrl, cUrl.count) == RC_OK {
+					let str = String(cString: cUrl)
+					trueURL = URL(string: str)
+				}
+				iconURL = trueURL
+			}
+		}
+	}
 	
-	func userInfo() {
+	/// Will be `nil` if not logged in.
+	func userInfo() -> UserInfo? {
 		guard let usrInf = rc_client_get_user_info(_client) else {
-			return
+			return nil
 		}
 		
+		return UserInfo(user: usrInf)
 	}
+	
+	// MARK: - getters/setters
+
+	/// Gets/sets whether hardcore is enabled (off by default).
+	///
+	/// Can be called with a game loaded.
+	/// Enabling hardcore with a game loaded will call `restartEmulationRequested(client: Client)`
+	/// event. Processing will be disabled until `Client.reset()` is called.
+	public var hardcoreMode: Bool {
+		get {
+			return (rc_client_get_hardcore_enabled(_client) != 0)
+		}
+		set {
+			rc_client_set_hardcore_enabled(_client, newValue ? 1 : 0)
+		}
+	}
+	
+	/// Gets/sets whether encore mode is enabled (off by default).
+	///
+	/// Evaluated when loading a game. Has no effect while a game is loaded.
+	public var encoreMode: Bool {
+		get {
+			return (rc_client_get_encore_mode_enabled(_client) != 0)
+		}
+		set {
+			rc_client_set_encore_mode_enabled(_client, newValue ? 1 : 0)
+		}
+	}
+	
+	/// Gets/sets whether unofficial achievements should be loaded.
+	///
+	/// Evaluated when loading a game. Has no effect while a game is loaded.
+	public var useUnofficialAchievements: Bool {
+		get {
+			return (rc_client_get_unofficial_enabled(_client) != 0)
+		}
+		set {
+			rc_client_set_unofficial_enabled(_client, newValue ? 1 : 0)
+		}
+	}
+	
+	/// Sets whether spectator mode is enabled (off by default).
+	///
+	/// If enabled, events for achievement unlocks and leaderboard submissions will be
+	/// raised, but server calls to actually perform the unlock/submit will not occur.
+	/// Can be modified while a game is loaded. Evaluated at unlock/submit time.
+	/// Cannot be modified if disabled before a game is loaded.
+	public var spectatorMode: Bool {
+		get {
+			return (rc_client_get_spectator_mode_enabled(_client) != 0)
+		}
+		set {
+			rc_client_set_spectator_mode_enabled(_client, newValue ? 1 : 0)
+		}
+	}
+	
+	// MARK: -
 	
 	public func achievementsList() -> [ClientAchievementBucket]? {
 		guard let list = rc_client_create_achievement_list(_client, Int32(RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL), Int32(RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS)) else {
