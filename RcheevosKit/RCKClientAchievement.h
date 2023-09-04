@@ -47,7 +47,8 @@ typedef NS_OPTIONS(uint8_t, RCKClientAchievementUnlocked) {
 
 @interface RCKClientAchievement : NSObject
 
-- (instancetype)initWithRetroPointer:(const void*)ptr;
+- (instancetype)init UNAVAILABLE_ATTRIBUTE;
+- (instancetype)initWithRetroPointer:(const void*)ptr stateIcon:(RCKClientAchievementState)state NS_DESIGNATED_INITIALIZER;
 
 @property (readonly, copy) NSString *title;
 @property (readonly, copy) NSString *achievementDescription;
@@ -61,6 +62,8 @@ typedef NS_OPTIONS(uint8_t, RCKClientAchievementUnlocked) {
 @property (readonly) RCKClientAchievementCategory category;
 @property (readonly) RCKClientAchievementBucketType bucket;
 @property (readonly) RCKClientAchievementUnlocked unlocked;
+
+@property (readonly, copy) NSURL *currentIconURL;
 
 @end
 

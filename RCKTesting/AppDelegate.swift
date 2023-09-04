@@ -7,6 +7,7 @@
 
 import Cocoa
 import RcheevosKit
+import RcheevosKit.RCKConsoles
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {

@@ -119,6 +119,7 @@ FOUNDATION_EXPORT NSString *RCKConsoleGetName(RCKConsoleIdentifier ident) NS_SWI
 
 @interface RCKMemoryRegion : NSObject
 
+- (instancetype)init UNAVAILABLE_ATTRIBUTE;
 + (nullable NSArray<RCKMemoryRegion*>*)regionsBasedOnConsole:(RCKConsoleIdentifier)ident;
 
 /*! first address of block as queried by RetroAchievements */

@@ -10,10 +10,15 @@
 
 @implementation RCKClientAchievement
 
-- (instancetype)initWithRetroPointer:(const void*)ptr
+- (instancetype)initWithRetroPointer:(const void*)ptr stateIcon:(RCKClientAchievementState)state
 {
 	if (self = [super init]) {
 		const rc_client_achievement_t* rcChev = ptr;
+		char url[1024] = {0};
+		if (rc_client_achievement_get_image_url(rcChev, state, url, sizeof(url))) {
+			NSString *nsURL = @(url);
+			_currentIconURL = [NSURL URLWithString:nsURL];
+		}
 		_title = @(rcChev->title);
 		_achievementDescription = @(rcChev->description);
 		_badgeName = @(rcChev->badge_name);

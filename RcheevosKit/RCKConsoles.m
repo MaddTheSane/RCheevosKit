@@ -15,6 +15,10 @@ NSString * RCKConsoleGetName(RCKConsoleIdentifier ident)
 	return @(theName);
 }
 
+@interface RCKMemoryRegion ()
+-(instancetype)initWithMemoryRegions:(const rc_memory_regions_t*)regions index:(NSInteger)idx NS_DESIGNATED_INITIALIZER;
+@end
+
 @implementation RCKMemoryRegion
 {
 	const rc_memory_regions_t *val;

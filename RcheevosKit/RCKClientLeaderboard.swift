@@ -43,7 +43,7 @@ public extension Client {
 		}
 		
 		public override var debugDescription: String {
-			return "\(title), \(leaderboardDescription) Tracker value: \(trackerValue)"
+			return "\(title), \(leaderboardDescription) Tracker value: \(trackerValue) state: \(state)"
 		}
 	}
 }

@@ -26,8 +26,8 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc(restartEmulationRequestedByClient:)
 	func restartEmulationRequested(client: Client)
 	
-	@objc(gotAchievementForClient:achievement:URLForIcon:)
-	optional func gotAchievement(client: Client, _ achievement: RCKClientAchievement, urlForIcon: URL?)
+	@objc(gotAchievementForClient:achievement:)
+	optional func gotAchievement(client: Client, _ achievement: RCKClientAchievement)
 	
 	@objc(leaderboardStartedForClient:leaderboard:)
 	optional func leaderboardStarted(client: Client, _ leaderboard: Client.Leaderboard)
@@ -57,6 +57,26 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc
 	optional func hideLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
 	
+	/// Multiple challenge indicators may be shown, but only one per achievement, so key the list on the achievement ID
+	@objc
+	optional func showChallengeIndicator(client: Client, identifier: UInt32, imageURL: URL?)
+	
+	/// This indicator is no longer needed
+	@objc
+	optional func hideChallengeIndicator(client: Client, identifier: UInt32)
+
+	/// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
+	@objc
+	optional func updateProgressIndicator(client: Client, achievement: RCKClientAchievement)
+	
+	/// The SHOW event tells us the indicator was not visible, but should be now.
+	@objc
+	optional func showProgressIndicator(client: Client, achievement: RCKClientAchievement)
+	
+	/// The hide event indicates the indicator should no longer be visible.
+	@objc
+	optional func hideProgressIndicator(client: Client)
+
 	func gameLoadedSuccessfully(client: Client)
 	
 	func gameFailedToLoad(client: Client, error: Error)
@@ -106,7 +126,7 @@ public class Client: NSObject {
 			let trueResponse = response as! HTTPURLResponse
 			var server_response = rc_api_server_response_t()
 			server_response.http_status_code = Int32(trueResponse.statusCode)
-			if let dat {
+			if let dat, !dat.isEmpty {
 				dat.withUnsafeBytes { urbp in
 					server_response.body = urbp.baseAddress?.assumingMemoryBound(to: Int8.self)
 					server_response.body_length = urbp.count
@@ -175,6 +195,10 @@ public class Client: NSObject {
 	
 	public func start() {
 		// Create the client instance
+		// But only if it isn't created yet!
+		guard _client == nil else {
+			return
+		}
 		//_client = rc_client_create(Client.read_memory, Client.server_call)
 		_client = rc_client_create({ address, buffer, num_bytes, client in
 			return Client.read_memory(address, buffer: buffer, num_bytes: num_bytes, client: client)
@@ -213,19 +237,19 @@ public class Client: NSObject {
 				aSelf.leaderboardSubmitted(event.pointee.leaderboard)
 
 			case UInt32(RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW):
-				break
+				aSelf.showChallengeIndicator(achievement: event.pointee.achievement)
 				
 			case UInt32(RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_HIDE):
-				break
+				aSelf.hideChallengeIndicator(achievement: event.pointee.achievement)
 				
 			case UInt32(RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_SHOW):
-				break
+				aSelf.showProgressIndicator(achievement: event.pointee.achievement)
 				
 			case UInt32(RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_HIDE):
-				break
+				aSelf.delegate?.hideProgressIndicator?(client: aSelf)
 				
 			case UInt32(RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_UPDATE):
-				break
+				aSelf.updateProgressIndicator(achievement: event.pointee.achievement)
 				
 			case UInt32(RC_CLIENT_EVENT_LEADERBOARD_TRACKER_SHOW):
 				aSelf.leaderboard_tracker_show(tracker: event.pointee.leaderboard_tracker)
@@ -284,14 +308,8 @@ public class Client: NSObject {
 	}
 	
 	private func achievementTriggered(_ achievement: UnsafePointer<rc_client_achievement_t>!) {
-		var url = [CChar](repeating: 0, count: 1024)
-		var actualURL: URL? = nil
-		if (rc_client_achievement_get_image_url(achievement, Int32(RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED), &url, url.count) == RC_OK),
-		   let urlStr = URL(string: String(cString: url)) {
-			actualURL = urlStr
-		}
-		let ach = RCKClientAchievement(retroPointer: achievement!)
-		delegate?.gotAchievement?(client: self, ach, urlForIcon: actualURL)
+		let ach = RCKClientAchievement(retroPointer: achievement!, stateIcon: .unlocked)
+		delegate?.gotAchievement?(client: self, ach)
 	}
 	
 	/// Processes achievements for the current frame.
@@ -425,6 +443,31 @@ public class Client: NSObject {
 		guard result == RC_OK else {
 			throw RCKError(RCKError.Code(rawValue: result) ?? .invalidState)
 		}
+	}
+	
+	private func showChallengeIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
+		var imageURL: URL? = nil
+		var cUrl = [CChar](repeating: 0, count: 512)
+		if (rc_client_achievement_get_image_url(achievement, Int32(RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED), &cUrl, cUrl.count) == RC_OK) {
+			let urlString = String(cString: cUrl)
+			imageURL = URL(string: urlString)
+		}
+		delegate?.showChallengeIndicator?(client: self, identifier: achievement.pointee.id, imageURL: imageURL)
+	}
+	
+	private func hideChallengeIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
+		delegate?.hideChallengeIndicator?(client: self, identifier: achievement.pointee.id)
+	}
+	
+	// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
+	private func updateProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
+		let achieve = RCKClientAchievement(retroPointer: achievement, stateIcon: .active)
+	}
+	
+	// The SHOW event tells us the indicator was not visible, but should be now.
+	private func showProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
+		let achieve = RCKClientAchievement(retroPointer: achievement, stateIcon: .active)
+
 	}
 	
 	// MARK: - User Account stuff
@@ -625,7 +668,7 @@ public extension Client {
 		fileprivate init(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>) {
 			//TODO: would memcpy be faster?
 			let dis = tracker.pointee.display
-			var preDisplay: [CChar] = [dis.0, dis.1, dis.2, dis.3, dis.4, dis.5, dis.6, dis.7, dis.8, dis.9, dis.10, dis.11, dis.12, dis.13, dis.14, dis.15, dis.16, dis.17, dis.18, dis.19, dis.20, dis.21, dis.22, dis.23, 0]
+			let preDisplay: [CChar] = [dis.0, dis.1, dis.2, dis.3, dis.4, dis.5, dis.6, dis.7, dis.8, dis.9, dis.10, dis.11, dis.12, dis.13, dis.14, dis.15, dis.16, dis.17, dis.18, dis.19, dis.20, dis.21, dis.22, dis.23, 0]
 			display = String(cString: preDisplay)
 			identifier = tracker.pointee.id
 		}

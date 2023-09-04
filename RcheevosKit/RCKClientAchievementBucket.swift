@@ -26,7 +26,7 @@ public class ClientAchievementBucket: NSObject {
 		bucketType = BucketType(rawValue: rcheevo.bucket_type)!
 		
 		let cAchievements = UnsafeBufferPointer(start: rcheevo.achievements, count: Int(rcheevo.num_achievements))
-		achievements = cAchievements.map({RCKClientAchievement(retroPointer: $0!)})
+		achievements = cAchievements.map({RCKClientAchievement(retroPointer: $0!, stateIcon: RCKClientAchievement.State(rawValue: $0!.pointee.state) ?? .disabled)})
 		let aURLs = cAchievements.map { achieve -> URL? in
 			var url = [CChar](repeating: 0, count: 1024)
 			var actualURL: URL? = nil
