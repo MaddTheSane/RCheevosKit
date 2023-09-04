@@ -14,12 +14,16 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc(readMemoryForClient:atAddress:toBuffer:count:)
 	func readMemory(client: Client, at address: UInt32, to buffer: UnsafeMutablePointer<UInt8>?, count num_bytes: UInt32) -> UInt32
 	
-	@objc optional func loginSuccessful(client: Client)
+	@objc(loginSuccessfulForClient:)
+	func loginSuccessful(client: Client)
 	
 	@objc(loginFailedForClient:withError:)
-	optional func loginFailed(client: Client, with: Error)
+	func loginFailed(client: Client, with: Error)
 	
+	/// Usually called when the user wants to enable hardcore mode when a game is running.
+	///
 	/// Make sure you call `Client.reset()` after the emulator has reset itself.
+	@objc(restartEmulationRequestedByClient:)
 	func restartEmulationRequested(client: Client)
 	
 	@objc(gotAchievementForClient:achievement:URLForIcon:)
@@ -34,6 +38,25 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc(leaderboardSubmittedForClient:leaderboard:)
 	optional func leaderboardSubmitted(client: Client, _ leaderboard: Client.Leaderboard)
 	
+	/// Find the currently visible tracker by ID and update what's being displayed.
+	/// The display text buffer is guaranteed to live for as long as the game is loaded,
+	/// but it may be updated in a non-thread safe manner within `Client.doFrame()`, so
+	/// we create a copy for the rendering code to read.
+	@objc
+	optional func updateLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
+	
+	/// The actual implementation of converting a `LeaderboardTracker` to
+	/// an on-screen widget is going to be client-specific. The provided tracker object
+	/// has a unique identifier for the tracker and a string to be displayed on-screen.
+	/// The string should be displayed using a fixed-width font to eliminate jittering
+	/// when timers are updated several times a second.
+	@objc
+	optional func showLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
+	
+	/// This tracker is no longer needed
+	@objc
+	optional func hideLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
+	
 	func gameLoadedSuccessfully(client: Client)
 	
 	func gameFailedToLoad(client: Client, error: Error)
@@ -42,9 +65,9 @@ public protocol ClientDelegate: NSObjectProtocol {
 
 	@objc optional func gameChangeFailed(client: Client, error: Error)
 
-	@objc optional func gameCompleted(client: Client)
+	@objc func gameCompleted(client: Client)
 	
-	@objc optional func serverError(client: Client, message: String?, api: String?)
+	@objc func serverError(client: Client, message: String?, api: String?)
 }
 
 /// Provides a wrapper around `rc_client_t`.
@@ -138,6 +161,42 @@ public class Client: NSObject {
 		delegate?.leaderboardSubmitted?(client: self, Leaderboard(leaderboard: leaderboard))
 	}
 	
+	@objc(RCKLeaderboardTracker) @objcMembers
+	public class LeaderboardTracker: NSObject {
+		public let display: String
+		public let identifier: UInt32
+		
+		fileprivate init(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>) {
+			//TODO: would memcpy be faster?
+			let dis = tracker.pointee.display
+			var preDisplay: [CChar] = [dis.0, dis.1, dis.2, dis.3, dis.4, dis.5, dis.6, dis.7, dis.8, dis.9, dis.10, dis.11, dis.12, dis.13, dis.14, dis.15, dis.16, dis.17, dis.18, dis.19, dis.20, dis.21, dis.22, dis.23, 0]
+			display = String(cString: preDisplay)
+			identifier = tracker.pointee.id
+		}
+		
+		public override var hash: Int {
+			var aHash = Hasher()
+			identifier.hash(into: &aHash)
+			return aHash.finalize()
+		}
+		
+		public override var description: String {
+			return "ID ‘\(identifier)’, \(display)"
+		}
+	}
+	
+	private func leaderboard_tracker_show(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>?) {
+		delegate?.showLeaderboardTracker?(client: self, tracker: LeaderboardTracker(tracker: tracker!))
+	}
+	
+	private func leaderboard_tracker_update(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>?) {
+		delegate?.updateLeaderboardTracker?(client: self, tracker: LeaderboardTracker(tracker: tracker!))
+	}
+	
+	private func leaderboard_tracker_hide(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>?) {
+		delegate?.hideLeaderboardTracker?(client: self, tracker: LeaderboardTracker(tracker: tracker!))
+	}
+	
 	public func start() {
 		// Create the client instance
 		//_client = rc_client_create(Client.read_memory, Client.server_call)
@@ -193,19 +252,19 @@ public class Client: NSObject {
 				break
 				
 			case UInt32(RC_CLIENT_EVENT_LEADERBOARD_TRACKER_SHOW):
-				break
+				aSelf.leaderboard_tracker_show(tracker: event.pointee.leaderboard_tracker)
 				
 			case UInt32(RC_CLIENT_EVENT_LEADERBOARD_TRACKER_HIDE):
-				break
+				aSelf.leaderboard_tracker_hide(tracker: event.pointee.leaderboard_tracker)
 				
 			case UInt32(RC_CLIENT_EVENT_LEADERBOARD_TRACKER_UPDATE):
-				break
+				aSelf.leaderboard_tracker_update(tracker: event.pointee.leaderboard_tracker)
 				
 			case UInt32(RC_CLIENT_EVENT_RESET):
 				aSelf.delegate?.restartEmulationRequested(client: aSelf)
 
 			case UInt32(RC_CLIENT_EVENT_GAME_COMPLETED):
-				aSelf.delegate?.gameCompleted?(client: aSelf)
+				aSelf.delegate?.gameCompleted(client: aSelf)
 				
 			case UInt32(RC_CLIENT_EVENT_SERVER_ERROR):
 				let message: String?
@@ -221,7 +280,7 @@ public class Client: NSObject {
 					api = nil
 				}
 
-				aSelf.delegate?.serverError?(client: aSelf, message: message, api: api)
+				aSelf.delegate?.serverError(client: aSelf, message: message, api: api)
 				
 			default:
 				print("Unknown event type \(event.pointee.type)!")
@@ -396,14 +455,14 @@ public class Client: NSObject {
 	
 	private func loginCallback(result: Int32, errorMessage: UnsafePointer<CChar>?) {
 		if result == RC_OK {
-			delegate?.loginSuccessful?(client: self)
+			delegate?.loginSuccessful(client: self)
 		} else {
 			var userInfo = [String: Any]()
 			if let errorMessage {
 				userInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
 			}
 			
-			delegate?.loginFailed?(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
+			delegate?.loginFailed(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
 		}
 	}
 	
@@ -570,5 +629,11 @@ extension RCKError.Code: CustomStringConvertible {
 	public var description: String {
 		let des = rc_error_str(self.rawValue)!
 		return String(cString: des)
+	}
+}
+
+extension RCKConsoleIdentifier: CustomStringConvertible {
+	public var description: String {
+		return self.name
 	}
 }
