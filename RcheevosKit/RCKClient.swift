@@ -161,30 +161,6 @@ public class Client: NSObject {
 		delegate?.leaderboardSubmitted?(client: self, Leaderboard(leaderboard: leaderboard))
 	}
 	
-	@objc(RCKLeaderboardTracker) @objcMembers
-	public class LeaderboardTracker: NSObject {
-		public let display: String
-		public let identifier: UInt32
-		
-		fileprivate init(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>) {
-			//TODO: would memcpy be faster?
-			let dis = tracker.pointee.display
-			var preDisplay: [CChar] = [dis.0, dis.1, dis.2, dis.3, dis.4, dis.5, dis.6, dis.7, dis.8, dis.9, dis.10, dis.11, dis.12, dis.13, dis.14, dis.15, dis.16, dis.17, dis.18, dis.19, dis.20, dis.21, dis.22, dis.23, 0]
-			display = String(cString: preDisplay)
-			identifier = tracker.pointee.id
-		}
-		
-		public override var hash: Int {
-			var aHash = Hasher()
-			identifier.hash(into: &aHash)
-			return aHash.finalize()
-		}
-		
-		public override var description: String {
-			return "ID ‘\(identifier)’, \(display)"
-		}
-	}
-	
 	private func leaderboard_tracker_show(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>?) {
 		delegate?.showLeaderboardTracker?(client: self, tracker: LeaderboardTracker(tracker: tracker!))
 	}
@@ -287,7 +263,7 @@ public class Client: NSObject {
 			}
 		}
 		
-		// Disable hardcore - if we goof something up in the implementation, we don't want our
+		// Disable hardcore for now - if we goof something up in the implementation, we don't want our
 		// account disabled for cheating.
 		rc_client_set_hardcore_enabled(_client, 0)
 	}
@@ -508,36 +484,6 @@ public class Client: NSObject {
 		return String(cString: cToken)
 	}
 	
-	@objc(RCKClientUserInfo) @objcMembers
-	public class UserInfo: NSObject {
-		public let displayName: String
-		public let userName: String
-		public let token: String
-		public let score: UInt32
-		public let softcoreScore: UInt32
-		public let countOfUnreadMessages: UInt32
-		public let iconURL: URL?
-
-		fileprivate init(user hi: UnsafePointer<rc_client_user_t>) {
-			displayName = String(cString: hi.pointee.display_name)
-			userName = String(cString: hi.pointee.username)
-			token = String(cString: hi.pointee.token)
-			score = hi.pointee.score
-			softcoreScore = hi.pointee.score_softcore
-			countOfUnreadMessages = hi.pointee.num_unread_messages
-			
-			do {
-				var trueURL: URL? = nil
-				var cUrl = [CChar](repeating: 0, count: 512)
-				if rc_client_user_get_image_url(hi, &cUrl, cUrl.count) == RC_OK {
-					let str = String(cString: cUrl)
-					trueURL = URL(string: str)
-				}
-				iconURL = trueURL
-			}
-		}
-	}
-	
 	/// Will be `nil` if not logged in.
 	func userInfo() -> UserInfo? {
 		guard let usrInf = rc_client_get_user_info(_client) else {
@@ -635,5 +581,63 @@ extension RCKError.Code: CustomStringConvertible {
 extension RCKConsoleIdentifier: CustomStringConvertible {
 	public var description: String {
 		return self.name
+	}
+}
+
+
+//Additional classes
+public extension Client {
+	@objc(RCKClientUserInfo) @objcMembers
+	class UserInfo: NSObject {
+		public let displayName: String
+		public let userName: String
+		public let token: String
+		public let score: UInt32
+		public let softcoreScore: UInt32
+		public let countOfUnreadMessages: UInt32
+		public let iconURL: URL?
+
+		fileprivate init(user hi: UnsafePointer<rc_client_user_t>) {
+			displayName = String(cString: hi.pointee.display_name)
+			userName = String(cString: hi.pointee.username)
+			token = String(cString: hi.pointee.token)
+			score = hi.pointee.score
+			softcoreScore = hi.pointee.score_softcore
+			countOfUnreadMessages = hi.pointee.num_unread_messages
+			
+			do {
+				var trueURL: URL? = nil
+				var cUrl = [CChar](repeating: 0, count: 512)
+				if rc_client_user_get_image_url(hi, &cUrl, cUrl.count) == RC_OK {
+					let str = String(cString: cUrl)
+					trueURL = URL(string: str)
+				}
+				iconURL = trueURL
+			}
+		}
+	}
+
+	@objc(RCKLeaderboardTracker) @objcMembers
+	class LeaderboardTracker: NSObject {
+		public let display: String
+		public let identifier: UInt32
+		
+		fileprivate init(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>) {
+			//TODO: would memcpy be faster?
+			let dis = tracker.pointee.display
+			var preDisplay: [CChar] = [dis.0, dis.1, dis.2, dis.3, dis.4, dis.5, dis.6, dis.7, dis.8, dis.9, dis.10, dis.11, dis.12, dis.13, dis.14, dis.15, dis.16, dis.17, dis.18, dis.19, dis.20, dis.21, dis.22, dis.23, 0]
+			display = String(cString: preDisplay)
+			identifier = tracker.pointee.id
+		}
+		
+		public override var hash: Int {
+			var aHash = Hasher()
+			identifier.hash(into: &aHash)
+			return aHash.finalize()
+		}
+		
+		public override var description: String {
+			return "ID ‘\(identifier)’, \(display)"
+		}
 	}
 }
