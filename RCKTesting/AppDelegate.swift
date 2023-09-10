@@ -8,6 +8,8 @@
 import Cocoa
 import RcheevosKit
 import RcheevosKit.RCKConsoles
+import RcheevosKit.RCKClientAchievement
+import RcheevosKit.RCKError
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {

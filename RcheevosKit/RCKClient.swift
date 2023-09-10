@@ -11,12 +11,29 @@ import Foundation
 
 @objc(RCKClientDelegate)
 public protocol ClientDelegate: NSObjectProtocol {
-	@objc(readMemoryForClient:atAddress:toBuffer:count:)
-	func readMemory(client: Client, at address: UInt32, to buffer: UnsafeMutablePointer<UInt8>?, count num_bytes: UInt32) -> UInt32
+	/// RetroAchievements addresses start at `$00000000`, which normally represents the first physical byte
+	/// of memory for the system.
+	///
+	/// Normally, an emulator stores it's RAM in a singular contiguous buffer,
+	/// which makes reading from a RetroAchievements address simple:
+	///
+	/// ```
+	/// if (address + num_bytes >= RAM_size)
+	///   return 0;
+	/// memcpy(buffer, &RAM[address], num_bytes);
+	/// return num_bytes;
+	/// ```
+	///
+	/// Sometimes an emulator only exposes a virtual BUS. In that case, it may be necessary to translate
+	/// the RetroAchievements address to a real address.
+	@objc(readMemoryForClient:atAddress:count:)
+	func readMemory(client: Client, at address: UInt32, count num_bytes: UInt32) -> Data
 	
+	/// Log-in succeeded.
 	@objc(loginSuccessfulForClient:)
 	func loginSuccessful(client: Client)
 	
+	/// Log-in failed.
 	@objc(loginFailedForClient:withError:)
 	func loginFailed(client: Client, with: Error)
 	
@@ -26,8 +43,9 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc(restartEmulationRequestedByClient:)
 	func restartEmulationRequested(client: Client)
 	
-	@objc(gotAchievementForClient:achievement:)
-	optional func gotAchievement(client: Client, _ achievement: RCKClientAchievement)
+	/// The user got an achievement!
+	@objc(client:gotAchievement:)
+	optional func client(_ client: Client, got achievement: RCKClientAchievement)
 	
 	@objc(leaderboardStartedForClient:leaderboard:)
 	optional func leaderboardStarted(client: Client, _ leaderboard: Client.Leaderboard)
@@ -61,15 +79,15 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc
 	optional func showChallengeIndicator(client: Client, identifier: UInt32, imageURL: URL?)
 	
-	/// This indicator is no longer needed
+	/// The challenge indicator is no longer needed
 	@objc
 	optional func hideChallengeIndicator(client: Client, identifier: UInt32)
 
-	/// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
+	/// The *UPDATE* event assumes the indicator is already visible, and just asks us to update the image/text.
 	@objc
 	optional func updateProgressIndicator(client: Client, achievement: RCKClientAchievement)
 	
-	/// The SHOW event tells us the indicator was not visible, but should be now.
+	/// The *SHOW* event tells us the indicator was not visible, but should be now.
 	@objc
 	optional func showProgressIndicator(client: Client, achievement: RCKClientAchievement)
 	
@@ -77,30 +95,60 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc
 	optional func hideProgressIndicator(client: Client)
 
+	/// Game has finished loading.
 	func gameLoadedSuccessfully(client: Client)
 	
+	/// Error loading the game.
 	func gameFailedToLoad(client: Client, error: Error)
 	
+	/// Game was changed successfully.
 	@objc optional func gameChangedSuccessfully(client: Client)
 
+	/// There was an error changing the game.
 	@objc optional func gameChangeFailed(client: Client, error: Error)
 
+	/// User has completed all achievements!
 	@objc func gameCompleted(client: Client)
 	
 	@objc func serverError(client: Client, message: String?, api: String?)
 }
+
+var _initErrors: () = {
+	NSError.setUserInfoValueProvider(forDomain: RCKError.errorDomain) { err1, userInfo in
+		guard let err = err1 as? RCKError else {
+			return nil
+		}
+		
+		if userInfo == NSDebugDescriptionErrorKey {
+			let des = rc_error_str(err.code.rawValue)!
+			return String(cString: des)
+		} else if userInfo == NSLocalizedDescriptionKey {
+			//TODO: localize!
+			let des = rc_error_str(err.code.rawValue)!
+			return String(cString: des)
+		}
+		
+		return nil
+	}
+}()
 
 /// Provides a wrapper around `rc_client_t`.
 @objc(RCKClient) @objcMembers
 public class Client: NSObject {
 	private var _client: OpaquePointer?
 	private var session: URLSession!
+	/// The delegate for the client to call.
 	public weak var delegate: ClientDelegate?
 	
 	public override init() {
+		_ = _initErrors
 		super.init()
 		
 		session = URLSession(configuration: .default)
+	}
+	
+	deinit {
+		stop()
 	}
 	
 	private func serverCallback(request: UnsafePointer<rc_api_request_t>?,
@@ -144,29 +192,22 @@ public class Client: NSObject {
 	/// This is the function the `rc_client` will use to read memory for the emulator.
 	private static func read_memory(_ address: UInt32, buffer: UnsafeMutablePointer<UInt8>?, num_bytes: UInt32, client: OpaquePointer?) -> UInt32
 	{
-		// RetroAchievements addresses start at $00000000, which normally represents the first physical byte
-		// of memory for the system. Normally, an emulator stores it's RAM in a singular contiguous buffer,
-		// which makes reading from a RetroAchievements address simple:
-		//
-		//   if (address + num_bytes >= RAM_size)
-		//     return 0;
-		//   memcpy(buffer, &RAM[address], num_bytes);
-		//   return num_bytes;
-		//
-		// Sometimes an emulator only exposes a virtual BUS. In that case, it may be necessary to translate
-		// the RetroAchievements address to a real address.
-	//	uint32_t real_address = convert_retroachievements_address_to_real_address(address);
-	//	return emulator_read_memory(real_address, buffer, num_bytes);
 		guard let usrDat = rc_client_get_userdata(client) else {
 			return 0
 		}
 
 		let theClass: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
 		if let classDel = theClass.delegate {
-			return classDel.readMemory(client: theClass, at: address, to: buffer, count: num_bytes)
+			let dat = classDel.readMemory(client: theClass, at: address, count: num_bytes)
+			if dat.count > 0 {
+				dat.withUnsafeBytes { urbp in
+					_=memcpy(buffer, urbp.baseAddress, min(urbp.count, Int(num_bytes)))
+				}
+			}
+			return UInt32(dat.count)
 		}
 
-		return 0;
+		return 0
 	}
 
 	private func leaderboardStarted(_ leaderboard: UnsafePointer<rc_client_leaderboard_t>?) {
@@ -292,6 +333,7 @@ public class Client: NSObject {
 		rc_client_set_hardcore_enabled(_client, 0)
 	}
 	
+	/// Stops the client.
 	public func stop() {
 		if _client != nil {
 			// Release resources associated to the client instance
@@ -309,7 +351,7 @@ public class Client: NSObject {
 	
 	private func achievementTriggered(_ achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let ach = RCKClientAchievement(retroPointer: achievement!, stateIcon: .unlocked)
-		delegate?.gotAchievement?(client: self, ach)
+		delegate?.client?(self, got: ach)
 	}
 	
 	/// Processes achievements for the current frame.
@@ -340,7 +382,8 @@ public class Client: NSObject {
 			delegate?.gameFailedToLoad(client: self, error: NSError(domain: RCKErrorDomain, code: Int(result), userInfo: dict))
 		}
 	}
-		
+	
+	/// Begin loading a game from the selected URL.
 	@objc(loadGameFromURL:console:)
 	public func loadGame(from url: URL, console: RCKConsoleIdentifier = .unknown) {
 		_ = url.withUnsafeFileSystemRepresentation { up in
@@ -354,6 +397,7 @@ public class Client: NSObject {
 		}
 	}
 	
+	/// Begin loading a game from the passed-in data.
 	@objc(loadGameFromData:console:)
 	public func loadGame(from: Data, console: RCKConsoleIdentifier = .unknown) {
 		_ = from.withUnsafeBytes { urbp in
@@ -376,7 +420,8 @@ public class Client: NSObject {
 		let err: Error
 		
 		if result == RC_HARDCORE_DISABLED {
-			err = RCKError(.hardcoreDisabled, userInfo: [NSLocalizedDescriptionKey: "Hardcore disabled. Unrecognized media inserted."])
+			err = RCKError(.hardcoreDisabled, userInfo: [NSLocalizedDescriptionKey: "Hardcore disabled. Unrecognized media inserted.",
+														NSDebugDescriptionErrorKey: "Hardcore disabled. Unrecognized media inserted."])
 		} else {
 			let errMsg = errorMessage ?? rc_error_str(result)!
 			let errStr = String(cString: errMsg)
@@ -413,9 +458,12 @@ public class Client: NSObject {
 
 	// MARK: -
 	
+	/// Serializes the runtime state into a `Data` object.
+	///
+	/// Throws on error.
 	public func captureRetroAchievementsState() throws -> Data {
 		guard let _client else {
-			throw RCKError(.invalidState)
+			throw RCKError(.apiFailure)
 		}
 		let bufferSize = rc_client_progress_size(_client)
 		var buffer = Data(count: bufferSize)
@@ -430,6 +478,9 @@ public class Client: NSObject {
 		}
 	}
 	
+	/// Deserializes the runtime state from a `Data` object.
+	///
+	/// Throws on error.
 	@objc(restoreRetroAchievementsStateFromData:error:)
 	public func restoreRetroAchievementsState(from: Data) throws {
 		guard let _client else {
@@ -462,12 +513,13 @@ public class Client: NSObject {
 	// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
 	private func updateProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let achieve = RCKClientAchievement(retroPointer: achievement, stateIcon: .active)
+		delegate?.updateProgressIndicator?(client: self, achievement: achieve)
 	}
 	
 	// The SHOW event tells us the indicator was not visible, but should be now.
 	private func showProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let achieve = RCKClientAchievement(retroPointer: achievement, stateIcon: .active)
-
+		delegate?.showProgressIndicator?(client: self, achievement: achieve)
 	}
 	
 	// MARK: - User Account stuff
@@ -485,6 +537,7 @@ public class Client: NSObject {
 		}
 	}
 	
+	/// Login with a user name and a password.
 	public func loginWith(userName: String, password: String) {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
@@ -497,6 +550,7 @@ public class Client: NSObject {
 		}, nil)
 	}
 	
+	/// Login with a user name and a previously-generated token.
 	public func loginWith(userName: String, token: String) {
 		// This is exactly the same functionality as rc_client_begin_login_with_password, but
 		// uses the token captured from the first login instead of a password.
@@ -510,6 +564,7 @@ public class Client: NSObject {
 		}, nil)
 	}
 	
+	/// Logout of the current user account.
 	public func logout() {
 		rc_client_logout(_client)
 	}
@@ -605,6 +660,9 @@ public class Client: NSObject {
 		return buckets.map({ClientAchievementBucket(rcheevo: $0)})
 	}
 	
+	/// Get information about the current game.
+	///
+	/// Returns `nil` if no game is loaded.
 	public func gameInfo() -> GameInfo? {
 		guard let gi = rc_client_get_game_info(_client) else {
 			return nil
@@ -622,7 +680,7 @@ extension RCKError.Code: CustomStringConvertible {
 }
 
 extension RCKConsoleIdentifier: CustomStringConvertible {
-	public var description: String {
+	@inlinable public var description: String {
 		return self.name
 	}
 }
@@ -634,10 +692,12 @@ public extension Client {
 	class UserInfo: NSObject {
 		public let displayName: String
 		public let userName: String
+		/// Log-in token for quick log-in instead of using a password.
 		public let token: String
 		public let score: UInt32
 		public let softcoreScore: UInt32
 		public let countOfUnreadMessages: UInt32
+		/// The current icon URL of the user. May be `nil` if there was a problem parsing the URL.
 		public let iconURL: URL?
 
 		fileprivate init(user hi: UnsafePointer<rc_client_user_t>) {

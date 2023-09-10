@@ -63,7 +63,7 @@ typedef NS_OPTIONS(uint8_t, RCKClientAchievementUnlocked) {
 @property (readonly) RCKClientAchievementBucketType bucket;
 @property (readonly) RCKClientAchievementUnlocked unlocked;
 
-@property (readonly, copy) NSURL *currentIconURL;
+@property (readonly, copy, nullable) NSURL *currentIconURL;
 
 @end
 
