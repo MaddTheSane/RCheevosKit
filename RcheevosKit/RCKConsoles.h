@@ -122,15 +122,15 @@ FOUNDATION_EXPORT NSString *RCKConsoleGetName(RCKConsoleIdentifier ident) NS_SWI
 - (instancetype)init UNAVAILABLE_ATTRIBUTE;
 + (nullable NSArray<RCKMemoryRegion*>*)regionsBasedOnConsole:(RCKConsoleIdentifier)ident;
 
-/*! first address of block as queried by RetroAchievements */
+/*! First address of block as queried by RetroAchievements. */
 @property (readonly) unsigned startAddress;
-/*! last address of block as queried by RetroAchievements */
+/*! Last address of block as queried by RetroAchievements. */
 @property (readonly) unsigned endAddress;
-/*! real address for first address of block */
+/*! Real address for first address of block. */
 @property (readonly) unsigned realAddress;
-/*! \c RCKMemoryType for block */
+/*! \c RCKMemoryType for block. */
 @property (readonly) RCKMemoryType memoryType;
-/*! short description of block */
+/*! Short description of block. */
 @property (readonly, copy) NSString *memoryDescription;
 
 @end

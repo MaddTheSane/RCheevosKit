@@ -37,15 +37,16 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc(loginFailedForClient:withError:)
 	func loginFailed(client: Client, with: Error)
 	
-	/// Usually called when the user wants to enable hardcore mode when a game is running.
+	/// Called when the runtime wants the emulator reset.
 	///
+	/// Usually called when the user wants to enable hardcore mode when a game is running.
 	/// Make sure you call `Client.reset()` after the emulator has reset itself.
 	@objc(restartEmulationRequestedByClient:)
 	func restartEmulationRequested(client: Client)
 	
 	/// The user got an achievement!
 	@objc(client:gotAchievement:)
-	optional func client(_ client: Client, got achievement: RCKClientAchievement)
+	func client(_ client: Client, got achievement: RCKClientAchievement)
 	
 	@objc(leaderboardStartedForClient:leaderboard:)
 	optional func leaderboardStarted(client: Client, _ leaderboard: Client.Leaderboard)
@@ -351,7 +352,7 @@ public class Client: NSObject {
 	
 	private func achievementTriggered(_ achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let ach = RCKClientAchievement(retroPointer: achievement!, stateIcon: .unlocked)
-		delegate?.client?(self, got: ach)
+		delegate?.client(self, got: ach)
 	}
 	
 	/// Processes achievements for the current frame.
@@ -679,7 +680,7 @@ extension RCKError.Code: CustomStringConvertible {
 	}
 }
 
-extension RCKConsoleIdentifier: CustomStringConvertible {
+extension RCKConsoleIdentifier: CustomStringConvertible, Codable {
 	@inlinable public var description: String {
 		return self.name
 	}

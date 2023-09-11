@@ -60,7 +60,7 @@ NSString * RCKConsoleGetName(RCKConsoleIdentifier ident)
 	if (!memoryDescription) {
 		memoryDescription = @(val->region[index].description);
 	}
-	return memoryDescription;
+	return [memoryDescription copy];
 }
 
 + (NSArray<RCKMemoryRegion *> *)regionsBasedOnConsole:(RCKConsoleIdentifier)ident
