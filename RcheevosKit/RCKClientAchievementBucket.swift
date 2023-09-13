@@ -39,4 +39,8 @@ public class ClientAchievementBucket: NSObject {
 		achievementsAndImageURLs = Array(zip(achievements, aURLs))
 		achievementImageURLs = aURLs.map({$0 ?? URL(fileURLWithPath: "/dev/null")})
 	}
+	
+	public override var description: String {
+		return "\(label), achievements count: \(achievements.count), bucket \(bucketType)"
+	}
 }

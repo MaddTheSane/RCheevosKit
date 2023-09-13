@@ -114,7 +114,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc func serverError(client: Client, message: String?, api: String?)
 }
 
-var _initErrors: () = {
+private var _initErrors: () = {
 	NSError.setUserInfoValueProvider(forDomain: RCKError.errorDomain) { err1, userInfo in
 		guard let err = err1 as? RCKError else {
 			return nil
@@ -191,8 +191,7 @@ public class Client: NSObject {
 	}
 
 	/// This is the function the `rc_client` will use to read memory for the emulator.
-	private static func read_memory(_ address: UInt32, buffer: UnsafeMutablePointer<UInt8>?, num_bytes: UInt32, client: OpaquePointer?) -> UInt32
-	{
+	private static func read_memory(_ address: UInt32, buffer: UnsafeMutablePointer<UInt8>?, num_bytes: UInt32, client: OpaquePointer?) -> UInt32 {
 		guard let usrDat = rc_client_get_userdata(client) else {
 			return 0
 		}
@@ -205,7 +204,7 @@ public class Client: NSObject {
 					_=memcpy(buffer, urbp.baseAddress, min(urbp.count, Int(num_bytes)))
 				}
 			}
-			return UInt32(dat.count)
+			return min(UInt32(dat.count), num_bytes)
 		}
 
 		return 0
@@ -241,7 +240,7 @@ public class Client: NSObject {
 		guard _client == nil else {
 			return
 		}
-		//_client = rc_client_create(Client.read_memory, Client.server_call)
+		
 		_client = rc_client_create({ address, buffer, num_bytes, client in
 			return Client.read_memory(address, buffer: buffer, num_bytes: num_bytes, client: client)
 		}, { request, callback, callbackData, client in
@@ -426,7 +425,8 @@ public class Client: NSObject {
 		} else {
 			let errMsg = errorMessage ?? rc_error_str(result)!
 			let errStr = String(cString: errMsg)
-			err = RCKError(RCKError.Code(rawValue: result)!, userInfo: [NSLocalizedDescriptionKey: errStr])
+			err = RCKError(RCKError.Code(rawValue: result)!, userInfo: [NSLocalizedDescriptionKey: errStr,
+																	   NSDebugDescriptionErrorKey: errStr])
 		}
 		delegate?.gameChangeFailed?(client: self, error: err)
 	}
@@ -531,7 +531,9 @@ public class Client: NSObject {
 		} else {
 			var userInfo = [String: Any]()
 			if let errorMessage {
-				userInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
+				let tmpStr = String(cString: errorMessage)
+				userInfo[NSLocalizedDescriptionKey] = tmpStr
+				userInfo[NSDebugDescriptionErrorKey] = tmpStr
 			}
 			
 			delegate?.loginFailed(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
@@ -574,6 +576,8 @@ public class Client: NSObject {
 		return rc_client_get_user_info(_client) != nil
 	}
 	
+	/// The log-in token needed to conveniently log into Rcheevos.
+	///
 	/// Will be `nil` if not logged in.
 	public var loginToken: String? {
 		guard let usrInfo = rc_client_get_user_info(_client),
@@ -583,6 +587,8 @@ public class Client: NSObject {
 		return String(cString: cToken)
 	}
 	
+	/// Returns the current user information.
+	///
 	/// Will be `nil` if not logged in.
 	func userInfo() -> UserInfo? {
 		guard let usrInf = rc_client_get_user_info(_client) else {
@@ -597,7 +603,7 @@ public class Client: NSObject {
 	/// Gets/sets whether hardcore is enabled (off by default).
 	///
 	/// Can be called with a game loaded.
-	/// Enabling hardcore with a game loaded will call `restartEmulationRequested(client: Client)`
+	/// Enabling hardcore with a game loaded will call `Delegate.restartEmulationRequested(client: Client)`
 	/// event. Processing will be disabled until `Client.reset()` is called.
 	public var hardcoreMode: Bool {
 		get {
@@ -649,6 +655,7 @@ public class Client: NSObject {
 	
 	// MARK: -
 	
+	/// Returns the achievement list of the current game.
 	public func achievementsList() -> [ClientAchievementBucket]? {
 		guard let list = rc_client_create_achievement_list(_client, Int32(RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL), Int32(RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS)) else {
 			return nil
@@ -689,14 +696,20 @@ extension RCKConsoleIdentifier: CustomStringConvertible, Codable {
 
 //Additional classes
 public extension Client {
+	/// The user info.
 	@objc(RCKClientUserInfo) @objcMembers
-	class UserInfo: NSObject {
+	class UserInfo: NSObject, Codable {
+		/// The display name of the user.
 		public let displayName: String
+		/// The user name.
 		public let userName: String
 		/// Log-in token for quick log-in instead of using a password.
 		public let token: String
+		/// Hardcore score.
 		public let score: UInt32
+		/// Softcore score.
 		public let softcoreScore: UInt32
+		/// The number of unread messages.
 		public let countOfUnreadMessages: UInt32
 		/// The current icon URL of the user. May be `nil` if there was a problem parsing the URL.
 		public let iconURL: URL?
@@ -718,6 +731,10 @@ public extension Client {
 				}
 				iconURL = trueURL
 			}
+		}
+		
+		public override var description: String {
+			return "\(displayName) (\(userName)), score: \(score) (softcore: \(softcoreScore))"
 		}
 	}
 

@@ -83,4 +83,8 @@ public class GameInfo: NSObject, NSSecureCoding, Codable {
 		gameHash = String(cString: gi.pointee.hash)
 		badgeName = String(cString: gi.pointee.badge_name)
 	}
+	
+	public override var description: String {
+		return "\(title) hash \(gameHash), console \(consoleID.name)"
+	}
 }
