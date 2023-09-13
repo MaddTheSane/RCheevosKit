@@ -45,6 +45,11 @@ typedef NS_OPTIONS(uint8_t, RCKClientAchievementUnlocked) {
 	RCKClientAchievementUnlockedBoth = RCKClientAchievementUnlockedSoftcore | RCKClientAchievementUnlockedHardcore
 } NS_SWIFT_NAME(RCKClientAchievement.Unlocked);
 
+typedef NS_ENUM(int32_t, RCKClientAchievementListGrouping) {
+	RCKClientAchievementListGroupingLockState = 0,
+	RCKClientAchievementListGroupingProgress = 1
+} NS_SWIFT_NAME(RCKClientAchievement.ListGrouping);
+
 @interface RCKClientAchievement : NSObject <NSSecureCoding>
 
 - (instancetype)init UNAVAILABLE_ATTRIBUTE;

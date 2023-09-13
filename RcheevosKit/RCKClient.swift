@@ -387,7 +387,7 @@ public class Client: NSObject {
 	@objc(loadGameFromURL:console:)
 	public func loadGame(from url: URL, console: RCKConsoleIdentifier = .unknown) {
 		_ = url.withUnsafeFileSystemRepresentation { up in
-			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), up, nil, 0, { result, errorMessage, client, userData in
+			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
 				}
@@ -401,7 +401,7 @@ public class Client: NSObject {
 	@objc(loadGameFromData:console:)
 	public func loadGame(from: Data, console: RCKConsoleIdentifier = .unknown) {
 		_ = from.withUnsafeBytes { urbp in
-			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, userdata in
+			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
 				}
@@ -656,8 +656,8 @@ public class Client: NSObject {
 	// MARK: -
 	
 	/// Returns the achievement list of the current game.
-	public func achievementsList() -> [ClientAchievementBucket]? {
-		guard let list = rc_client_create_achievement_list(_client, Int32(RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL), Int32(RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS)) else {
+	public func achievementsList(category: RCKClientAchievement.Category = .coreAndUnofficial, grouping: RCKClientAchievement.ListGrouping = .progress) -> [ClientAchievementBucket]? {
+		guard let list = rc_client_create_achievement_list(_client, Int32(category.rawValue), grouping.rawValue) else {
 			return nil
 		}
 		defer {
