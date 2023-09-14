@@ -143,6 +143,7 @@ public class Client: NSObject {
 	
 	public override init() {
 		_ = _initErrors
+		rc_hash_init_default_cdreader()
 		super.init()
 		
 		session = URLSession(configuration: .default)
@@ -155,11 +156,12 @@ public class Client: NSObject {
 	private func serverCallback(request: UnsafePointer<rc_api_request_t>?,
 								callback: rc_client_server_callback_t?,
 								callback_data: UnsafeMutableRawPointer?) {
-		guard let theURL = URL(string: String(cString: request!.pointee.url)) else {
+		guard let cURL = request?.pointee.url,
+			  let theURL = URL(string: String(cString: cURL)) else {
 			var server_response = rc_api_server_response_t()
 			server_response.body = nil
 			server_response.body_length = 0
-			server_response.http_status_code = 404
+			server_response.http_status_code = 400
 
 			callback?(&server_response, callback_data)
 //			rc_api_destroy_request(request)
