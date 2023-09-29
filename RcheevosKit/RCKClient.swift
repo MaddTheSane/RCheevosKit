@@ -379,7 +379,9 @@ public class Client: NSObject {
 		} else {
 			var dict = [String: Any]()
 			if let errorMessage {
-				dict[NSLocalizedDescriptionKey] = String(cString: errorMessage)
+				let tmpStr = String(cString: errorMessage)
+				dict[NSLocalizedDescriptionKey] = tmpStr
+				dict[NSDebugDescriptionErrorKey] = tmpStr
 			}
 			delegate?.gameFailedToLoad(client: self, error: NSError(domain: RCKErrorDomain, code: Int(result), userInfo: dict))
 		}
@@ -574,6 +576,7 @@ public class Client: NSObject {
 		rc_client_logout(_client)
 	}
 	
+	/// Is the user logged in?
 	public var isLoggedIn: Bool {
 		return rc_client_get_user_info(_client) != nil
 	}

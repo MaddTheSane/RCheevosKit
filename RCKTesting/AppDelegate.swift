@@ -24,11 +24,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	func loginFailed(client: RcheevosKit.Client, with: Error) {
 		DispatchQueue.main.async {
 			NSSound.beep()
+			let alert = NSAlert(error: with)
+			alert.alertStyle = .critical
+			alert.runModal()
 		}
 	}
 	
 	func restartEmulationRequested(client: RcheevosKit.Client) {
-		
+		DispatchQueue.main.async {
+			let alert = NSAlert()
+			
+			alert.messageText = "Restart requested!"
+			
+			alert.runModal()
+		}
 	}
 	
 	func gameLoadedSuccessfully(client: RcheevosKit.Client) {
@@ -36,7 +45,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	}
 	
 	func gameFailedToLoad(client: RcheevosKit.Client, error: Error) {
-		
+		DispatchQueue.main.async {
+			NSSound.beep()
+		}
 	}
 	
 	func gameCompleted(client: RcheevosKit.Client) {
@@ -60,6 +71,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	func applicationDidFinishLaunching(_ aNotification: Notification) {
 		client.delegate = self
 		client.start()
+		client.spectatorMode = true
 	}
 
 	func applicationWillTerminate(_ aNotification: Notification) {
@@ -78,6 +90,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 			NSSound.beep()
 			return
 		}
+		client.useUnofficialAchievements = true
 		client.loginWith(userName: name, password: pass)
 	}
 
