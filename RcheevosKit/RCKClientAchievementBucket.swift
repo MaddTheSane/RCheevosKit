@@ -8,17 +8,18 @@
 import Foundation
 @_implementationOnly import rcheevos
 
+public extension Client.Achievement {
 @objc(RCKClientAchievementBucket) @objcMembers
-public class ClientAchievementBucket: NSObject {
-	public typealias BucketType = RCKClientAchievement.BucketType
+class Bucket: NSObject {
+	public typealias BucketType = Client.Achievement.BucketType
 	
 	public let label: String
 	public let subsetID: UInt32
 	public let bucketType: BucketType
-	public let achievements: [RCKClientAchievement]
+	public let achievements: [Client.Achievement]
 	public let achievementImageURLs: [URL]
 	
-	public let achievementsAndImageURLs: [(RCKClientAchievement, URL?)]
+	public let achievementsAndImageURLs: [(Client.Achievement, URL?)]
 	
 	internal init(rcheevo: rc_client_achievement_bucket_t) {
 		label = String(cString: rcheevo.label)
@@ -26,11 +27,11 @@ public class ClientAchievementBucket: NSObject {
 		bucketType = BucketType(rawValue: rcheevo.bucket_type)!
 		
 		let cAchievements = UnsafeBufferPointer(start: rcheevo.achievements, count: Int(rcheevo.num_achievements))
-		achievements = cAchievements.map({RCKClientAchievement(retroPointer: $0!, stateIcon: RCKClientAchievement.State(rawValue: $0!.pointee.state) ?? .disabled)})
+		achievements = cAchievements.map({Client.Achievement(retroPointer: $0!, stateIcon: Client.Achievement.State(rawValue: $0!.pointee.state) ?? .disabled)})
 		let aURLs = cAchievements.map { achieve -> URL? in
 			var url = [CChar](repeating: 0, count: 1024)
 			var actualURL: URL? = nil
-
+			
 			if rc_client_achievement_get_image_url(achieve, Int32(achieve!.pointee.state), &url, url.count) == RC_OK {
 				actualURL = URL(string: String(cString: url))
 			}
@@ -43,4 +44,5 @@ public class ClientAchievementBucket: NSObject {
 	public override var description: String {
 		return "\(label), achievements count: \(achievements.count), bucket \(bucketType)"
 	}
+}
 }

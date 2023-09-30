@@ -58,7 +58,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 		
 	}
 	
-	func client(_ client: RcheevosKit.Client, got achievement: RCKClientAchievement) {
+	func client(_ client: RcheevosKit.Client, got achievement: Client.Achievement) {
 		
 	}
 

@@ -46,7 +46,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	
 	/// The user got an achievement!
 	@objc(client:gotAchievement:)
-	func client(_ client: Client, got achievement: RCKClientAchievement)
+	func client(_ client: Client, got achievement: Client.Achievement)
 	
 	@objc(leaderboardStartedForClient:leaderboard:)
 	optional func leaderboardStarted(client: Client, _ leaderboard: Client.Leaderboard)
@@ -86,11 +86,11 @@ public protocol ClientDelegate: NSObjectProtocol {
 
 	/// The *UPDATE* event assumes the indicator is already visible, and just asks us to update the image/text.
 	@objc
-	optional func updateProgressIndicator(client: Client, achievement: RCKClientAchievement)
+	optional func updateProgressIndicator(client: Client, achievement: Client.Achievement)
 	
 	/// The *SHOW* event tells us the indicator was not visible, but should be now.
 	@objc
-	optional func showProgressIndicator(client: Client, achievement: RCKClientAchievement)
+	optional func showProgressIndicator(client: Client, achievement: Client.Achievement)
 	
 	/// The hide event indicates the indicator should no longer be visible.
 	@objc
@@ -352,7 +352,7 @@ public class Client: NSObject {
 	}
 	
 	private func achievementTriggered(_ achievement: UnsafePointer<rc_client_achievement_t>!) {
-		let ach = RCKClientAchievement(retroPointer: achievement!, stateIcon: .unlocked)
+		let ach = Client.Achievement(retroPointer: achievement!, stateIcon: .unlocked)
 		delegate?.client(self, got: ach)
 	}
 	
@@ -517,13 +517,13 @@ public class Client: NSObject {
 	
 	// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
 	private func updateProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
-		let achieve = RCKClientAchievement(retroPointer: achievement, stateIcon: .active)
+		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .active)
 		delegate?.updateProgressIndicator?(client: self, achievement: achieve)
 	}
 	
 	// The SHOW event tells us the indicator was not visible, but should be now.
 	private func showProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
-		let achieve = RCKClientAchievement(retroPointer: achievement, stateIcon: .active)
+		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .active)
 		delegate?.showProgressIndicator?(client: self, achievement: achieve)
 	}
 	
@@ -661,7 +661,7 @@ public class Client: NSObject {
 	// MARK: -
 	
 	/// Returns the achievement list of the current game.
-	public func achievementsList(category: RCKClientAchievement.Category = .coreAndUnofficial, grouping: RCKClientAchievement.ListGrouping = .progress) -> [ClientAchievementBucket]? {
+	public func achievementsList(category: Client.Achievement.Category = .coreAndUnofficial, grouping: Client.Achievement.ListGrouping = .progress) -> [Client.Achievement.Bucket]? {
 		guard let list = rc_client_create_achievement_list(_client, Int32(category.rawValue), grouping.rawValue) else {
 			return nil
 		}
@@ -670,7 +670,7 @@ public class Client: NSObject {
 		}
 		
 		let buckets = UnsafeBufferPointer(start: list.pointee.buckets, count: Int(list.pointee.num_buckets))
-		return buckets.map({ClientAchievementBucket(rcheevo: $0)})
+		return buckets.map({Client.Achievement.Bucket(rcheevo: $0)})
 	}
 	
 	/// Get information about the current game.

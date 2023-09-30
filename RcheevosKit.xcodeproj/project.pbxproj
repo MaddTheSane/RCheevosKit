@@ -20,10 +20,10 @@
 		559CDB572AA131AF0097A937 /* RCKClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559CDB562AA131AF0097A937 /* RCKClient.swift */; };
 		55A292CF2A9EE47E007806A5 /* RcheevosKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 55A292CE2A9EE47E007806A5 /* RcheevosKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		55A294732A9EE7B8007806A5 /* RCKClientAchievement.h in Headers */ = {isa = PBXBuildFile; fileRef = 55A294712A9EE7B8007806A5 /* RCKClientAchievement.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		55A294742A9EE7B8007806A5 /* RCKClientAchievement.m in Sources */ = {isa = PBXBuildFile; fileRef = 55A294722A9EE7B8007806A5 /* RCKClientAchievement.m */; };
 		55A294772A9EE8CA007806A5 /* RCKConsoles.h in Headers */ = {isa = PBXBuildFile; fileRef = 55A294752A9EE8CA007806A5 /* RCKConsoles.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		55A294782A9EE8CA007806A5 /* RCKConsoles.m in Sources */ = {isa = PBXBuildFile; fileRef = 55A294762A9EE8CA007806A5 /* RCKConsoles.m */; };
 		55B5C9992AA1BAD100C39439 /* RCKClientLeaderboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B5C9982AA1BAD100C39439 /* RCKClientLeaderboard.swift */; };
+		55B7AE832AC815E6005ABCC6 /* RCKClientAchievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B7AE822AC815E6005ABCC6 /* RCKClientAchievement.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,11 +65,11 @@
 		55A292CB2A9EE47E007806A5 /* RcheevosKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RcheevosKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55A292CE2A9EE47E007806A5 /* RcheevosKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RcheevosKit.h; sourceTree = "<group>"; };
 		55A294712A9EE7B8007806A5 /* RCKClientAchievement.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCKClientAchievement.h; sourceTree = "<group>"; };
-		55A294722A9EE7B8007806A5 /* RCKClientAchievement.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCKClientAchievement.m; sourceTree = "<group>"; };
 		55A294752A9EE8CA007806A5 /* RCKConsoles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCKConsoles.h; sourceTree = "<group>"; };
 		55A294762A9EE8CA007806A5 /* RCKConsoles.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCKConsoles.m; sourceTree = "<group>"; };
 		55A2BC462AA0685800CBD0E3 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		55B5C9982AA1BAD100C39439 /* RCKClientLeaderboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RCKClientLeaderboard.swift; sourceTree = "<group>"; };
+		55B7AE822AC815E6005ABCC6 /* RCKClientAchievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RCKClientAchievement.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,7 +136,7 @@
 			children = (
 				55A292CE2A9EE47E007806A5 /* RcheevosKit.h */,
 				55A294712A9EE7B8007806A5 /* RCKClientAchievement.h */,
-				55A294722A9EE7B8007806A5 /* RCKClientAchievement.m */,
+				55B7AE822AC815E6005ABCC6 /* RCKClientAchievement.swift */,
 				55A294752A9EE8CA007806A5 /* RCKConsoles.h */,
 				55A294762A9EE8CA007806A5 /* RCKConsoles.m */,
 				559CDB562AA131AF0097A937 /* RCKClient.swift */,
@@ -290,8 +290,8 @@
 				552BA1B62AA448F6007449CC /* RCKError.m in Sources */,
 				552BA1B22AA42F3A007449CC /* RCKClientAchievementBucket.swift in Sources */,
 				559CDB572AA131AF0097A937 /* RCKClient.swift in Sources */,
+				55B7AE832AC815E6005ABCC6 /* RCKClientAchievement.swift in Sources */,
 				55B5C9992AA1BAD100C39439 /* RCKClientLeaderboard.swift in Sources */,
-				55A294742A9EE7B8007806A5 /* RCKClientAchievement.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
