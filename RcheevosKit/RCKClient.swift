@@ -112,6 +112,15 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc func gameCompleted(client: Client)
 	
 	@objc func serverError(client: Client, message: String?, api: String?)
+	
+	/// possibly-new ranking received for leaderboard.
+	@objc optional func scoreBoard(client: Client, updated: Client.Leaderboard.Scoreboard)
+	
+	/// an unlock request could not be completed and is pending.
+	@objc optional func clientDisconnected(_ client: Client)
+	
+	/// all pending unlocks have been completed.
+	@objc optional func clientReconnected(_ client: Client)
 }
 
 private var _initErrors: () = {
@@ -309,6 +318,9 @@ public class Client: NSObject {
 			case UInt32(RC_CLIENT_EVENT_GAME_COMPLETED):
 				aSelf.delegate?.gameCompleted(client: aSelf)
 				
+			case UInt32(RC_CLIENT_EVENT_LEADERBOARD_SCOREBOARD):
+				aSelf.delegate?.scoreBoard?(client: aSelf, updated: Leaderboard.Scoreboard(scoreboard: event.pointee.leaderboard_scoreboard))
+				
 			case UInt32(RC_CLIENT_EVENT_SERVER_ERROR):
 				let message: String?
 				let api: String?
@@ -325,6 +337,12 @@ public class Client: NSObject {
 
 				aSelf.delegate?.serverError(client: aSelf, message: message, api: api)
 				
+			case UInt32(RC_CLIENT_EVENT_DISCONNECTED):
+				aSelf.delegate?.clientDisconnected?(aSelf)
+				
+			case UInt32(RC_CLIENT_EVENT_RECONNECTED):
+				aSelf.delegate?.clientReconnected?(aSelf)
+
 			default:
 				print("Unknown event type \(event.pointee.type)!")
 			}
@@ -682,6 +700,11 @@ public class Client: NSObject {
 		}
 		
 		return GameInfo(gi: gi)
+	}
+	
+	/// Returns `true` if the current game has any leaderboards.
+	public var hasLeaderboards: Bool {
+		return rc_client_has_leaderboards(_client) != 0
 	}
 }
 

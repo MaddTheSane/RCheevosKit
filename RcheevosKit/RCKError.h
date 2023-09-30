@@ -56,7 +56,10 @@ typedef RCK_ERROR_ENUM(int, RCKErrorDomain, RCKError) {
 	RCKErrorNoGameLoaded = -29,
 	RCKErrorHardcoreDisabled = -30,
 	RCKErrorAborted = -31,
-	RCKErrorNoResponse = -32
+	RCKErrorNoResponse = -32,
+	RCKErrorAccessDenied = -33,
+	RCKErrorInvalidCredentials = -34,
+	RCKErrorExpiredToken = -35
 };
 
 NS_ASSUME_NONNULL_END
