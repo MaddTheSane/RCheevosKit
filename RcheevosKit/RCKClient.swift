@@ -715,9 +715,13 @@ extension RCKError.Code: CustomStringConvertible {
 	}
 }
 
-extension RCKConsoleIdentifier: CustomStringConvertible, Codable {
+extension RCKConsoleIdentifier: CustomStringConvertible, CustomDebugStringConvertible, Codable {
 	@inlinable public var description: String {
 		return self.name
+	}
+	
+	public var debugDescription: String {
+		return "\(self.name) (\(self.rawValue))"
 	}
 }
 
