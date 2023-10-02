@@ -69,7 +69,7 @@ NSString * RCKConsoleGetName(RCKConsoleIdentifier ident)
 	if (!d) {
 		return nil;
 	}
-	NSMutableArray *toRet = [NSMutableArray array];
+	NSMutableArray *toRet = [[NSMutableArray alloc] initWithCapacity:d->num_regions];
 	for (int i = 0; i < d->num_regions; i++) {
 		RCKMemoryRegion *memRegn = [[RCKMemoryRegion alloc] initWithMemoryRegions:d index:i];
 		[toRet addObject:memRegn];

@@ -14,13 +14,13 @@ public extension Client {
 	class Achievement: NSObject, Codable, NSSecureCoding {
 		@objc(RCKClientAchievementState)
 		public enum State : UInt8, @unchecked Sendable, Codable {
-			/// unprocessed
+			/// Unprocessed.
 			case inactive = 0
-			/// eligible to trigger
+			/// Eligible to trigger.
 			case active = 1
-			/// earned by user
+			/// Earned by user.
 			case unlocked = 2
-			/// not supported by this version of the runtime
+			/// Not supported by this version of the runtime.
 			case disabled = 3
 		}
 		

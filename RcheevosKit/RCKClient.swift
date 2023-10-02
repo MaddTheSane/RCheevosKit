@@ -494,11 +494,11 @@ public class Client: NSObject {
 		let success = buffer.withUnsafeMutableBytes { umrbp in
 			return rc_client_serialize_progress(_client, umrbp.baseAddress)
 		}
-		if success == RC_OK {
-			return buffer
-		} else {
+		guard success == RC_OK else {
 			throw RCKError(RCKError.Code(rawValue: success) ?? .invalidState)
 		}
+		
+		return buffer
 	}
 	
 	/// Deserializes the runtime state from a `Data` object.

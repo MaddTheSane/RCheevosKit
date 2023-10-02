@@ -60,11 +60,11 @@ public extension Client {
 			/// Used for scoreboard events. Contains the response from the server when a leaderboard entry is submitted.
 			@objc(RCKClientLeaderboardScoreboardEntry) @objcMembers
 			public class Entry: NSObject, Codable {
-				/// The user associated to the entry
+				/// The user associated to the entry.
 				public let userName: String
-				/// The rank of the entry
+				/// The rank of the entry.
 				public let rank: UInt32
-				/// The value of the entry
+				/// The value of the entry.
 				public let score: String
 				
 				internal init(entry: rc_client_leaderboard_scoreboard_entry_t) {
@@ -79,19 +79,19 @@ public extension Client {
 				}
 			}
 			
-			/// The ID of the leaderboard which was submitted
-			let leaderboardID: UInt32
-			/// The value that was submitted
-			let submittedScore: String
-			/// The player's best submitted value
-			let bestScore: String
-			/// The player's new rank within the leaderboard
-			let newRank: UInt32
-			/// The total number of entries in the leaderboard
-			let totalEntries: Int
+			/// The ID of the leaderboard which was submitted.
+			public let leaderboardID: UInt32
+			/// The value that was submitted.
+			public let submittedScore: String
+			/// The player's best submitted value.
+			public let bestScore: String
+			/// The player's new rank within the leaderboard.
+			public let newRank: UInt32
+			/// The total number of entries in the leaderboard.
+			public let totalEntries: Int
 			
-			/// An array of the top entries for the leaderboard
-			let topEntries: [Entry]
+			/// An array of the top entries for the leaderboard.
+			public let topEntries: [Entry]
 			
 			internal init(scoreboard: UnsafePointer<rc_client_leaderboard_scoreboard_t>) {
 				leaderboardID = scoreboard.pointee.leaderboard_id
