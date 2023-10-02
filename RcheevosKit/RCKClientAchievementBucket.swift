@@ -21,6 +21,7 @@ class Bucket: NSObject {
 	
 	public let achievementsAndImageURLs: [(Client.Achievement, URL?)]
 	
+	@nonobjc
 	internal init(rcheevo: rc_client_achievement_bucket_t) {
 		label = String(cString: rcheevo.label)
 		subsetID = rcheevo.subset_id

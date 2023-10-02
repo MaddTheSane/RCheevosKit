@@ -35,6 +35,7 @@ public extension Client {
 		public let format: Format
 		public let lowerIsBetter: Bool
 
+		@nonobjc
 		internal init(leaderboard: UnsafePointer<rc_client_leaderboard_t>?) {
 			let lb = leaderboard!.pointee
 			title = String(cString: lb.title)
@@ -67,6 +68,7 @@ public extension Client {
 				/// The value of the entry.
 				public let score: String
 				
+				@nonobjc
 				internal init(entry: rc_client_leaderboard_scoreboard_entry_t) {
 					userName = String(cString: entry.username)
 					rank = entry.rank
@@ -93,6 +95,7 @@ public extension Client {
 			/// An array of the top entries for the leaderboard.
 			public let topEntries: [Entry]
 			
+			@nonobjc
 			internal init(scoreboard: UnsafePointer<rc_client_leaderboard_scoreboard_t>) {
 				leaderboardID = scoreboard.pointee.leaderboard_id
 				

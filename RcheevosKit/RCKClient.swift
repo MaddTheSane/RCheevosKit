@@ -746,6 +746,7 @@ public extension Client {
 		/// The current icon URL of the user. May be `nil` if there was a problem parsing the URL.
 		public let iconURL: URL?
 
+		@nonobjc
 		fileprivate init(user hi: UnsafePointer<rc_client_user_t>) {
 			displayName = String(cString: hi.pointee.display_name)
 			userName = String(cString: hi.pointee.username)
@@ -775,6 +776,7 @@ public extension Client {
 		public let display: String
 		public let identifier: UInt32
 		
+		@nonobjc
 		fileprivate init(tracker: UnsafePointer<rc_client_leaderboard_tracker_t>) {
 			//TODO: would memcpy be faster?
 			let dis = tracker.pointee.display

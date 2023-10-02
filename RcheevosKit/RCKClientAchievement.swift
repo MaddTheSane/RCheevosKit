@@ -46,6 +46,7 @@ public extension Client {
 			case progress = 1
 		}
 
+		@nonobjc
 		internal init(retroPointer: UnsafePointer<rc_client_achievement_t>, stateIcon: State) {
 			var cUrl = [CChar](repeating: 0, count: 512)
 			if rc_client_achievement_get_image_url(retroPointer, Int32(stateIcon.rawValue), &cUrl, cUrl.count) == RC_OK {

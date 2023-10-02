@@ -70,6 +70,7 @@ public class GameInfo: NSObject, NSSecureCoding, Codable {
 	}()
 #endif
 	
+	@nonobjc
 	internal init(gi: UnsafePointer<rc_client_game_t>) {
 		var url = [CChar](repeating: 0, count: 1024)
 		if rc_client_game_get_image_url(gi, &url, url.count) == RC_OK {
