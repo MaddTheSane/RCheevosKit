@@ -13,7 +13,7 @@ public extension Client {
 	@objc(RCKClientAchievement) @objcMembers
 	class Achievement: NSObject, Codable, NSSecureCoding {
 		@objc(RCKClientAchievementState)
-		public enum State : UInt8, @unchecked Sendable, Codable {
+		public enum State : UInt8, @unchecked Sendable, Codable, CustomStringConvertible {
 			/// Unprocessed.
 			case inactive = 0
 			/// Eligible to trigger.
@@ -22,12 +22,25 @@ public extension Client {
 			case unlocked = 2
 			/// Not supported by this version of the runtime.
 			case disabled = 3
+			
+			public var description: String {
+				switch self {
+				case .inactive:
+					return "Inactive"
+				case .active:
+					return "Active"
+				case .unlocked:
+					return "Unlocked"
+				case .disabled:
+					return "Disabled"
+				}
+			}
 		}
 		
 		public typealias Category = RCKClientAchievementCategory
 		
 		@objc(RCKClientAchievementBucketType)
-		public enum BucketType : UInt8, @unchecked Sendable, Codable {
+		public enum BucketType : UInt8, @unchecked Sendable, Codable, CustomStringConvertible {
 			case unknown = 0
 			case locked = 1
 			case unlocked = 2
@@ -36,6 +49,27 @@ public extension Client {
 			case recentlyUnlocked = 5
 			case activeChallenge = 6
 			case almostThere = 7
+			
+			public var description: String {
+				switch self {
+				case .unknown:
+					return "Unknown"
+				case .locked:
+					return "Locked"
+				case .unlocked:
+					return "Unlocked"
+				case .unsupported:
+					return "Unsupported"
+				case .unofficial:
+					return "Unofficial"
+				case .recentlyUnlocked:
+					return "Recently Unlocked"
+				case .activeChallenge:
+					return "Active Challenge"
+				case .almostThere:
+					return "Almost There"
+				}
+			}
 		}
 		
 		public typealias Unlocked = RCKClientAchievementUnlocked
@@ -78,7 +112,11 @@ public extension Client {
 			measuredPercent = retroPointer.pointee.measured_percent
 			identifier = retroPointer.pointee.id
 			points = retroPointer.pointee.points
-			unlockTime = Date(timeIntervalSince1970: TimeInterval(retroPointer.pointee.unlock_time))
+			if retroPointer.pointee.unlock_time == 0 {
+				unlockTime = nil
+			} else {
+				unlockTime = Date(timeIntervalSince1970: TimeInterval(retroPointer.pointee.unlock_time))
+			}
 			state = Client.Achievement.State(rawValue: retroPointer.pointee.state)!
 			category = Client.Achievement.Category(rawValue: retroPointer.pointee.category)
 			bucket = Client.Achievement.BucketType(rawValue: retroPointer.pointee.bucket)!
@@ -93,7 +131,8 @@ public extension Client {
 		public let measuredPercent: Float
 		public let identifier: UInt32
 		public let points: UInt32
-		public let unlockTime: Date
+		/// Will be `nil` if the achievement is still locked.
+		public let unlockTime: Date?
 		public let state: State
 		public let category: Category
 		public let bucket: BucketType
@@ -111,7 +150,7 @@ public extension Client {
 			coder.encode(badgeName as NSString, forKey: Achievement.CodingKeys.badgeName.stringValue)
 			coder.encode(measuredProgress as NSString, forKey: Achievement.CodingKeys.measuredProgress.stringValue)
 			coder.encode(measuredPercent, forKey: Achievement.CodingKeys.measuredPercent.stringValue)
-			coder.encode(unlockTime as NSDate, forKey: Achievement.CodingKeys.unlockTime.stringValue)
+			coder.encodeConditionalObject(unlockTime as NSDate?, forKey: Achievement.CodingKeys.unlockTime.stringValue)
 
 			coder.encode(Int32(state.rawValue), forKey: Achievement.CodingKeys.state.stringValue)
 			coder.encode(Int32(category.rawValue), forKey: Achievement.CodingKeys.category.stringValue)
@@ -124,11 +163,11 @@ public extension Client {
 		public required init?(coder: NSCoder) {
 			identifier = UInt32(bitPattern: coder.decodeInt32(forKey: Achievement.CodingKeys.identifier.stringValue))
 			points = UInt32(bitPattern: coder.decodeInt32(forKey: Achievement.CodingKeys.points.stringValue))
-			guard let aDate = coder.decodeObject(of: NSDate.self, forKey: Achievement.CodingKeys.unlockTime.stringValue) as Date? else {
-				coder.failWithError(CocoaError(.coderValueNotFound))
-				return nil
+			if let aDate = coder.decodeObject(of: NSDate.self, forKey: Achievement.CodingKeys.unlockTime.stringValue) as Date?  {
+				unlockTime = aDate
+			} else {
+				unlockTime = nil
 			}
-			unlockTime = aDate
 			guard let preTitle = coder.decodeObject(of: NSString.self, forKey: Achievement.CodingKeys.title.stringValue) as String? else {
 				coder.failWithError(CocoaError(.coderValueNotFound))
 				return nil
@@ -193,6 +232,10 @@ public extension Client {
 			currentIconURL = coder.decodeObject(of: NSURL.self, forKey: Achievement.CodingKeys.currentIconURL.stringValue) as URL?
 			
 			super.init()
+		}
+		
+		public override var description: String {
+			return "\(title): \(achievementDescription)"
 		}
 	}
 }

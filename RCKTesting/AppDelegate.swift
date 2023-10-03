@@ -41,7 +41,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	}
 	
 	func gameLoadedSuccessfully(client: RcheevosKit.Client) {
-		
+		DispatchQueue.main.async {
+			self.achievements = self.client.achievementsList() ?? []
+			self.achievementsView.reloadData()
+		}
 	}
 	
 	func gameFailedToLoad(client: RcheevosKit.Client, error: Error) {
@@ -65,6 +68,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	@IBOutlet var window: NSWindow!
 	@IBOutlet var userNameField: NSTextField!
 	@IBOutlet var passwordField: NSSecureTextField!
+	@IBOutlet weak var achievementsView: NSOutlineView!
+	fileprivate var achievements = [Client.Achievement.Bucket]()
 
 	var client = Client()
 
@@ -105,3 +110,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	}
 }
 
+extension AppDelegate: NSOutlineViewDataSource, NSOutlineViewDelegate {
+	func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+		if item == nil {
+			return achievements.count
+		} else if let item = item as? Client.Achievement.Bucket {
+			return item.achievements.count
+		}
+		return 0
+	}
+	
+	func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+		if item == nil {
+			return achievements[index]
+		} else if let item = item as? Client.Achievement.Bucket {
+			return item.achievements[index]
+		}
+		return NSNull()
+	}
+	
+	func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+		if let item = item as? Client.Achievement.Bucket {
+			return item.achievements.count != 0
+		}
+		return false
+	}
+	
+	func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
+		return nil
+	}
+}

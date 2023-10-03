@@ -13,6 +13,42 @@ import Cocoa
 
 @objc(RCKGameInfo) @objcMembers
 public class GameInfo: NSObject, NSSecureCoding, Codable {
+	public let identifier: UInt32
+	public let consoleID: RCKConsoleIdentifier
+	public let title: String
+	public let gameHash: String
+	public let badgeName: String
+	
+	public let imageURL: URL?
+	
+#if os(OSX)
+	private(set) public lazy var image: NSImage? = {
+		if let imageURL {
+			return NSImage(contentsOf: imageURL)
+		}
+		return nil
+	}()
+#endif
+	
+	@nonobjc
+	internal init(gi: UnsafePointer<rc_client_game_t>) {
+		var url = [CChar](repeating: 0, count: 1024)
+		if rc_client_game_get_image_url(gi, &url, url.count) == RC_OK {
+			imageURL = URL(string: String(cString: url))
+		} else {
+			imageURL = nil
+		}
+		identifier = gi.pointee.id
+		consoleID = RCKConsoleIdentifier(rawValue: Int32(gi.pointee.console_id))!
+		title = String(cString: gi.pointee.title)
+		gameHash = String(cString: gi.pointee.hash)
+		badgeName = String(cString: gi.pointee.badge_name)
+	}
+	
+	public override var description: String {
+		return "\(title) hash \(gameHash), console \(consoleID.name)"
+	}
+	
 	public static var supportsSecureCoding: Bool {
 		return true
 	}
@@ -51,41 +87,5 @@ public class GameInfo: NSObject, NSSecureCoding, Codable {
 		badgeName = preBadge
 		
 		imageURL = coder.decodeObject(of: NSURL.self, forKey: GameInfo.CodingKeys.imageURL.stringValue) as URL?
-	}
-	
-	public let identifier: UInt32
-	public let consoleID: RCKConsoleIdentifier
-	public let title: String
-	public let gameHash: String
-	public let badgeName: String
-	
-	public let imageURL: URL?
-	
-#if os(OSX)
-	private(set) public lazy var image: NSImage? = {
-		if let imageURL {
-			return NSImage(contentsOf: imageURL)
-		}
-		return nil
-	}()
-#endif
-	
-	@nonobjc
-	internal init(gi: UnsafePointer<rc_client_game_t>) {
-		var url = [CChar](repeating: 0, count: 1024)
-		if rc_client_game_get_image_url(gi, &url, url.count) == RC_OK {
-			imageURL = URL(string: String(cString: url))
-		} else {
-			imageURL = nil
-		}
-		identifier = gi.pointee.id
-		consoleID = RCKConsoleIdentifier(rawValue: Int32(gi.pointee.console_id))!
-		title = String(cString: gi.pointee.title)
-		gameHash = String(cString: gi.pointee.hash)
-		badgeName = String(cString: gi.pointee.badge_name)
-	}
-	
-	public override var description: String {
-		return "\(title) hash \(gameHash), console \(consoleID.name)"
 	}
 }
