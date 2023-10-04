@@ -12,7 +12,7 @@ import Cocoa
 @_implementationOnly import rcheevos
 
 @objc(RCKGameInfo) @objcMembers
-public class GameInfo: NSObject, NSSecureCoding, Codable {
+final public class GameInfo: NSObject, NSSecureCoding, Codable {
 	public let identifier: UInt32
 	public let consoleID: RCKConsoleIdentifier
 	public let title: String

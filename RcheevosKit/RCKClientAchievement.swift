@@ -11,7 +11,7 @@ import Foundation
 
 public extension Client {
 	@objc(RCKClientAchievement) @objcMembers
-	class Achievement: NSObject, Codable, NSSecureCoding {
+	final class Achievement: NSObject, Codable, NSSecureCoding {
 		@objc(RCKClientAchievementState)
 		public enum State : UInt8, @unchecked Sendable, Codable, CustomStringConvertible {
 			/// Unprocessed.

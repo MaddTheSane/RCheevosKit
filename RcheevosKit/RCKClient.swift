@@ -144,7 +144,7 @@ private var _initErrors: () = {
 
 /// Provides a wrapper around `rc_client_t`.
 @objc(RCKClient) @objcMembers
-public class Client: NSObject {
+final public class Client: NSObject {
 	private var _client: OpaquePointer?
 	private var session: URLSession!
 	/// The delegate for the client to call.
@@ -730,7 +730,7 @@ extension RCKConsoleIdentifier: CustomStringConvertible, CustomDebugStringConver
 public extension Client {
 	/// The user info.
 	@objc(RCKClientUserInfo) @objcMembers
-	class UserInfo: NSObject, Codable {
+	final class UserInfo: NSObject, Codable {
 		/// The display name of the user.
 		public let displayName: String
 		/// The user name.
@@ -772,7 +772,7 @@ public extension Client {
 	}
 
 	@objc(RCKLeaderboardTracker) @objcMembers
-	class LeaderboardTracker: NSObject {
+	final class LeaderboardTracker: NSObject {
 		public let display: String
 		public let identifier: UInt32
 		

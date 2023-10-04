@@ -10,7 +10,7 @@ import Foundation
 
 public extension Client.Achievement {
 @objc(RCKClientAchievementBucket) @objcMembers
-class Bucket: NSObject {
+final class Bucket: NSObject {
 	public typealias BucketType = Client.Achievement.BucketType
 	
 	public let label: String

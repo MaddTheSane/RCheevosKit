@@ -10,7 +10,7 @@ import Foundation
 
 public extension Client {
 	@objc(RCKClientLeaderboard) @objcMembers
-	class Leaderboard: NSObject, Codable {
+	final class Leaderboard: NSObject, Codable {
 		
 		@objc(RCKClientLeaderboardState)
 		public enum State: UInt8, Codable {
@@ -57,10 +57,10 @@ public extension Client {
 		}
 		
 		@objc(RCKClientLeaderboardScoreboard) @objcMembers
-		public class Scoreboard: NSObject, Codable {
+		final public class Scoreboard: NSObject, Codable {
 			/// Used for scoreboard events. Contains the response from the server when a leaderboard entry is submitted.
 			@objc(RCKClientLeaderboardScoreboardEntry) @objcMembers
-			public class Entry: NSObject, Codable {
+			final public class Entry: NSObject, Codable {
 				/// The user associated to the entry.
 				public let userName: String
 				/// The rank of the entry.
