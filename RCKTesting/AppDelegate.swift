@@ -89,8 +89,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 
 	func applicationDidFinishLaunching(_ aNotification: Notification) {
 		client.delegate = self
-		client.start()
 		client.spectatorMode = true
+		client.useUnofficialAchievements = true
 	}
 
 	func applicationWillTerminate(_ aNotification: Notification) {
@@ -109,7 +109,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 			NSSound.beep()
 			return
 		}
-		client.useUnofficialAchievements = true
 		client.loginWith(userName: name, password: pass)
 	}
 

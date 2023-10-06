@@ -19,9 +19,8 @@ public protocol ClientDelegate: NSObjectProtocol {
 	///
 	/// ```
 	/// if (address + num_bytes >= RAM_size)
-	///   return 0;
-	/// memcpy(buffer, &RAM[address], num_bytes);
-	/// return num_bytes;
+	///   return [NSData data];
+	/// return [NSData dataWithBytes:&RAM[address] length:num_bytes]
 	/// ```
 	///
 	/// Sometimes an emulator only exposes a virtual BUS. In that case, it may be necessary to translate
@@ -156,6 +155,7 @@ final public class Client: NSObject {
 		super.init()
 		
 		session = URLSession(configuration: .default)
+		start()
 	}
 	
 	deinit {
@@ -245,7 +245,7 @@ final public class Client: NSObject {
 		delegate?.hideLeaderboardTracker?(client: self, tracker: LeaderboardTracker(tracker: tracker!))
 	}
 	
-	public func start() {
+	private func start() {
 		// Create the client instance
 		// But only if it isn't created yet!
 		guard _client == nil else {
@@ -354,7 +354,7 @@ final public class Client: NSObject {
 	}
 	
 	/// Stops the client.
-	public func stop() {
+	private func stop() {
 		if _client != nil {
 			// Release resources associated to the client instance
 			rc_client_destroy(_client)

@@ -99,17 +99,14 @@ public extension Client {
 				cUrl.withUnsafeMutableBytes { umrbp in
 					_=memset(umrbp.baseAddress, 0, umrbp.count)
 				}
-				var tmpBadgeName = retroPointer.pointee.badge_name
-				memcpy(&cUrl, &tmpBadgeName, MemoryLayout.size(ofValue: retroPointer.pointee.badge_name))
-				badgeName = String(cString: cUrl)
-			}
-			do {
-				cUrl.withUnsafeMutableBytes { umrbp in
-					_=memset(umrbp.baseAddress, 0, umrbp.count)
-				}
 				var tmpBadgeName = retroPointer.pointee.measured_progress
 				memcpy(&cUrl, &tmpBadgeName, MemoryLayout.size(ofValue: retroPointer.pointee.measured_progress))
 				measuredProgress = String(cString: cUrl)
+			}
+			do {
+				let tmpBadgeName = retroPointer.pointee.badge_name
+				cUrl = [tmpBadgeName.0, tmpBadgeName.1, tmpBadgeName.2, tmpBadgeName.3, tmpBadgeName.4, tmpBadgeName.5, tmpBadgeName.6, tmpBadgeName.7, 0]
+				badgeName = String(cString: cUrl)
 			}
 
 			measuredPercent = retroPointer.pointee.measured_percent
