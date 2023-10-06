@@ -405,9 +405,20 @@ final public class Client: NSObject {
 		}
 	}
 	
-	/// Begin loading a game from the selected URL.
+	/// Begin loading a game from the selected file URL.
 	@objc(loadGameFromURL:console:)
 	public func loadGame(from url: URL, console: RCKConsoleIdentifier = .unknown) {
+		guard url.isFileURL else {
+			DispatchQueue.main.async {
+				self.delegate?.gameFailedToLoad(client: self, error: RCKError(.apiFailure, userInfo:
+																				[NSLocalizedDescriptionKey: "Invalid URL scheme: RcheevosKit cannot load games directly from the internet.",
+																				NSDebugDescriptionErrorKey: "RcheevosKit cannot load games directly from the internet.",
+																	 NSLocalizedRecoverySuggestionErrorKey: "Either connect to the server using Finder or Files, or download the file to your device.",
+																							 NSURLErrorKey: url]))
+
+			}
+			return
+		}
 		_ = url.withUnsafeFileSystemRepresentation { up in
 			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
@@ -443,7 +454,8 @@ final public class Client: NSObject {
 		
 		if result == RC_HARDCORE_DISABLED {
 			err = RCKError(.hardcoreDisabled, userInfo: [NSLocalizedDescriptionKey: "Hardcore disabled. Unrecognized media inserted.",
-														NSDebugDescriptionErrorKey: "Hardcore disabled. Unrecognized media inserted."])
+														NSDebugDescriptionErrorKey: "Hardcore disabled. Unrecognized media inserted.",
+														NSLocalizedFailureErrorKey: "Unrecognized media inserted."])
 		} else {
 			let errMsg = errorMessage ?? rc_error_str(result)!
 			let errStr = String(cString: errMsg)
@@ -455,6 +467,17 @@ final public class Client: NSObject {
 	
 	@objc(changeMediaToURL:)
 	public func changeMedia(to url: URL) {
+		guard url.isFileURL else {
+			DispatchQueue.main.async {
+				self.delegate?.gameFailedToLoad(client: self, error: RCKError(.apiFailure, userInfo:
+																				[NSLocalizedDescriptionKey: "Invalid URL scheme: RcheevosKit cannot load games directly from the internet.",
+																				NSDebugDescriptionErrorKey: "RcheevosKit cannot load games directly from the internet.",
+																	 NSLocalizedRecoverySuggestionErrorKey: "Either connect to the server using Finder or Files, or download the file to your device.",
+																							 NSURLErrorKey: url]))
+
+			}
+			return
+		}
 		_ = url.withUnsafeFileSystemRepresentation { up in
 			return rc_client_begin_change_media(_client, up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
