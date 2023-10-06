@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if os(OSX)
+import Cocoa
+#endif
 @_implementationOnly import rcheevos
 @_implementationOnly import rcheevos.rc_client
 
@@ -139,6 +142,15 @@ public extension Client {
 		public let unlocked: Unlocked
 		
 		public let currentIconURL: URL?
+		
+#if os(OSX)
+	private(set) public lazy var currentIcon: NSImage? = {
+		if let imageURL = self.currentIconURL {
+			return NSImage(contentsOf: imageURL)
+		}
+		return nil
+	}()
+#endif
 		
 		public static var supportsSecureCoding: Bool { return true }
 		

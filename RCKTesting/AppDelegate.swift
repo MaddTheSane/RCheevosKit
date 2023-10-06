@@ -13,17 +13,31 @@ import RcheevosKit.RCKError
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
+	@IBOutlet var window: NSWindow!
+	@IBOutlet var userNameField: NSTextField!
+	@IBOutlet var passwordField: NSSecureTextField!
+	@IBOutlet weak var achievementsView: NSOutlineView!
+	@IBOutlet weak var gameNameView: NSTextField!
+	@IBOutlet weak var loginStatus: NSImageView!
+	fileprivate var achievements = [Client.Achievement.Bucket]()
+
+	var client = Client()
+
 	func readMemory(client: RcheevosKit.Client, at address: UInt32, count num_bytes: UInt32) -> Data {
 		return Data()
 	}
 	
 	func loginSuccessful(client: RcheevosKit.Client) {
-		
+		DispatchQueue.main.async {
+			self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
+		}
 	}
 	
 	func loginFailed(client: RcheevosKit.Client, with: Error) {
 		DispatchQueue.main.async {
 			NSSound.beep()
+			self.loginStatus.image = NSImage(named: NSImage.statusUnavailableName)
+
 			let alert = NSAlert(error: with)
 			alert.alertStyle = .critical
 			alert.runModal()
@@ -42,14 +56,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	
 	func gameLoadedSuccessfully(client: RcheevosKit.Client) {
 		DispatchQueue.main.async {
+			self.loginStatus.image = NSImage(named: NSImage.statusAvailableName)
 			self.achievements = self.client.achievementsList() ?? []
 			self.achievementsView.reloadData()
+			
+			self.gameNameView.stringValue = self.client.gameInfo()?.title ?? "Unknown Game"
 		}
 	}
 	
 	func gameFailedToLoad(client: RcheevosKit.Client, error: Error) {
 		DispatchQueue.main.async {
+			self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
 			NSSound.beep()
+			self.achievements.removeAll()
+			self.achievementsView.reloadData()
+			
+			self.gameNameView.stringValue = "No Game"
 		}
 	}
 	
@@ -64,14 +86,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	func client(_ client: RcheevosKit.Client, got achievement: Client.Achievement) {
 		
 	}
-
-	@IBOutlet var window: NSWindow!
-	@IBOutlet var userNameField: NSTextField!
-	@IBOutlet var passwordField: NSSecureTextField!
-	@IBOutlet weak var achievementsView: NSOutlineView!
-	fileprivate var achievements = [Client.Achievement.Bucket]()
-
-	var client = Client()
 
 	func applicationDidFinishLaunching(_ aNotification: Notification) {
 		client.delegate = self
@@ -137,6 +151,43 @@ extension AppDelegate: NSOutlineViewDataSource, NSOutlineViewDelegate {
 	}
 	
 	func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
-		return nil
+		let name: String
+		let info: String
+		let icon: NSImage?
+		if let item = item as? Client.Achievement.Bucket {
+			name = item.label
+			info = ""
+			icon = client.gameInfo()?.image
+		} else if let item = item as? Client.Achievement {
+			name = item.title
+			info = item.achievementDescription
+			icon = item.currentIcon
+		} else {
+			fatalError("We shouldn't be getting here...")
+		}
+
+		guard let id = tableColumn?.identifier else {
+			return nil
+		}
+		switch id {
+		case nameIdentifier:
+			return NSTextField(string: name)
+			
+		case infoIdentifier:
+			return NSTextField(string: info)
+
+		case iconIdentifier:
+			if let icon {
+				return NSImageView(image: icon)
+			}
+			return NSImageView(image: NSImage(named: NSImage.cautionName)!)
+			
+		default:
+			return nil
+		}
 	}
 }
+
+let nameIdentifier = NSUserInterfaceItemIdentifier("AutomaticTableColumnIdentifier.0")
+let infoIdentifier = NSUserInterfaceItemIdentifier("AutomaticTableColumnIdentifier.1")
+let iconIdentifier = NSUserInterfaceItemIdentifier("IconViewTableColumnIdentifier")
