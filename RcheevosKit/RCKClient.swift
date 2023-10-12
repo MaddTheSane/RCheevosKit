@@ -548,7 +548,7 @@ final public class Client: NSObject {
 	private func showChallengeIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		var imageURL: URL? = nil
 		var cUrl = [CChar](repeating: 0, count: 512)
-		if (rc_client_achievement_get_image_url(achievement, Int32(RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED), &cUrl, cUrl.count) == RC_OK) {
+		if rc_client_achievement_get_image_url(achievement, Int32(RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED), &cUrl, cUrl.count) == RC_OK {
 			let urlString = String(cString: cUrl)
 			imageURL = URL(string: urlString)
 		}
@@ -702,6 +702,11 @@ final public class Client: NSObject {
 		}
 	}
 	
+	/// Returns `true` if the current game has any leaderboards.
+	public var hasLeaderboards: Bool {
+		return rc_client_has_leaderboards(_client) != 0
+	}
+	
 	// MARK: -
 	
 	/// Returns the achievement list of the current game.
@@ -728,11 +733,8 @@ final public class Client: NSObject {
 		return GameInfo(gi: gi)
 	}
 	
-	/// Returns `true` if the current game has any leaderboards.
-	public var hasLeaderboards: Bool {
-		return rc_client_has_leaderboards(_client) != 0
-	}
-	
+	// MARK: - Logging
+
 	@objc(RCKClientLogLevel)
 	public enum LogLevel: CInt, @unchecked Sendable, Codable {
 		case none = 0
