@@ -13,7 +13,7 @@ public extension Client {
 	final class Leaderboard: NSObject, Codable {
 		
 		@objc(RCKClientLeaderboardState)
-		public enum State: UInt8, Codable {
+		public enum State: UInt8, @unchecked Sendable, Codable {
 			case inactive = 0
 			case active
 			case tracking
@@ -21,7 +21,7 @@ public extension Client {
 		}
 		
 		@objc(RCKClientLeaderboardFormat)
-		public enum Format: UInt8, Codable {
+		public enum Format: UInt8, @unchecked Sendable, Codable {
 			case time = 0
 			case score
 			case value

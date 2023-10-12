@@ -112,13 +112,13 @@ public protocol ClientDelegate: NSObjectProtocol {
 	
 	@objc func serverError(client: Client, message: String?, api: String?)
 	
-	/// possibly-new ranking received for leaderboard.
+	/// Possibly-new ranking received for leaderboard.
 	@objc optional func scoreBoard(client: Client, updated: Client.Leaderboard.Scoreboard)
 	
-	/// an unlock request could not be completed and is pending.
+	/// An unlock request could not be completed and is pending.
 	@objc optional func clientDisconnected(_ client: Client)
 	
-	/// all pending unlocks have been completed.
+	/// All pending unlocks have been completed.
 	@objc optional func clientReconnected(_ client: Client)
 	
 	/// Callback for logging or displaying a message.
