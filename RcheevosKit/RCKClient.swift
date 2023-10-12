@@ -120,6 +120,9 @@ public protocol ClientDelegate: NSObjectProtocol {
 	
 	/// all pending unlocks have been completed.
 	@objc optional func clientReconnected(_ client: Client)
+	
+	/// Callback for logging or displaying a message.
+	@objc optional func client(_ client: Client, receivedMessage: String)
 }
 
 private var _initErrors: () = {
@@ -729,6 +732,26 @@ final public class Client: NSObject {
 	public var hasLeaderboards: Bool {
 		return rc_client_has_leaderboards(_client) != 0
 	}
+	
+	@objc(RCKClientLogLevel)
+	public enum LogLevel: CInt, @unchecked Sendable, Codable {
+		case none = 0
+		case `error`
+		case warning
+		case info
+		case verbose
+	}
+	
+	/// Sets the logging level. The delegate must implement `client(_:receivedMessage:)` in order to receive messages.
+	public func enableLogging(level: LogLevel) {
+		rc_client_enable_logging(_client, level.rawValue) { message, client in
+			guard let usrDat = rc_client_get_userdata(client) else {
+				return
+			}
+			let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
+			aSelf.delegate?.client?(aSelf, receivedMessage: String(cString: message!))
+		}
+	}	
 }
 
 extension RCKError.Code: CustomStringConvertible {
