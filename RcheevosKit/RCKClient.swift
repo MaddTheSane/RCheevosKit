@@ -77,11 +77,11 @@ public protocol ClientDelegate: NSObjectProtocol {
 	
 	/// Multiple challenge indicators may be shown, but only one per achievement, so key the list on the achievement ID
 	@objc
-	optional func showChallengeIndicator(client: Client, identifier: UInt32, imageURL: URL?)
+	optional func showChallengeIndicator(client: Client, achievement: Client.Achievement, imageURL: URL?)
 	
 	/// The challenge indicator is no longer needed
 	@objc
-	optional func hideChallengeIndicator(client: Client, identifier: UInt32)
+	optional func hideChallengeIndicator(client: Client, achievement: Client.Achievement)
 
 	/// The *UPDATE* event assumes the indicator is already visible, and just asks us to update the image/text.
 	@objc
@@ -423,6 +423,7 @@ final public class Client: NSObject {
 			return
 		}
 		_ = url.withUnsafeFileSystemRepresentation { up in
+//			rc_client_begin_identify_and_load_game
 			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
@@ -482,7 +483,7 @@ final public class Client: NSObject {
 			return
 		}
 		_ = url.withUnsafeFileSystemRepresentation { up in
-			return rc_client_begin_change_media(_client, up, nil, 0, { result, errorMessage, client, _ in
+			return rc_client_begin_identify_and_change_media(_client, up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
 				}
@@ -495,7 +496,7 @@ final public class Client: NSObject {
 	@objc(changeMediaToData:)
 	public func changeMedia(to data: Data) {
 		_ = data.withUnsafeBytes { urbp in
-			return rc_client_begin_change_media(_client, nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, _ in
+			return rc_client_begin_identify_and_change_media(_client, nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
 				}
@@ -545,6 +546,8 @@ final public class Client: NSObject {
 		}
 	}
 	
+	// MARK: -
+	
 	private func showChallengeIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		var imageURL: URL? = nil
 		var cUrl = [CChar](repeating: 0, count: 512)
@@ -552,11 +555,13 @@ final public class Client: NSObject {
 			let urlString = String(cString: cUrl)
 			imageURL = URL(string: urlString)
 		}
-		delegate?.showChallengeIndicator?(client: self, identifier: achievement.pointee.id, imageURL: imageURL)
+		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .unlocked)
+		delegate?.showChallengeIndicator?(client: self, achievement: achieve, imageURL: imageURL)
 	}
 	
 	private func hideChallengeIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
-		delegate?.hideChallengeIndicator?(client: self, identifier: achievement.pointee.id)
+		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .active)
+		delegate?.hideChallengeIndicator?(client: self, achievement: achieve)
 	}
 	
 	// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
