@@ -24,6 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 FOUNDATION_EXPORT NSErrorDomain const RCKErrorDomain;
+/// Internally maps to `rc_error.h`.
 typedef RCK_ERROR_ENUM(int, RCKErrorDomain, RCKError) {
 	RCKErrorInvalidLuaOperand = -1,
 	RCKErrorInvalidMemoryOperand = -2,
@@ -39,7 +40,7 @@ typedef RCK_ERROR_ENUM(int, RCKErrorDomain, RCKError) {
 	RCKErrorDuplicatedProgress = -12,
 	RCKErrorMissingStart = -13,
 	RCKErrorMissingCancel = -14,
-	RCKErrorMissingSubmig = -15,
+	RCKErrorMissingSubmit = -15,
 	RCKErrorMissingValue = -16,
 	RCKErrorInvalidLeaderboardField = -17,
 	RCKErrorMissingDisplayString = -18,
@@ -61,5 +62,7 @@ typedef RCK_ERROR_ENUM(int, RCKErrorDomain, RCKError) {
 	RCKErrorInvalidCredentials = -34,
 	RCKErrorExpiredToken = -35
 };
+
+static const RCKError RCKErrorMissingSubmig API_DEPRECATED_WITH_REPLACEMENT("RCKErrorMissingSubmit", macos(10.13, 11.0), ios(10.13, 11.0), tvos(10.13, 11.0)) = RCKErrorMissingSubmit;
 
 NS_ASSUME_NONNULL_END

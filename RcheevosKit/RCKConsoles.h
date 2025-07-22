@@ -92,12 +92,14 @@ typedef NS_ENUM(int, RCKConsoleIdentifier) {
 	RCKConsoleNintendoDSi = 78,
 	RCKConsoleTI83 = 79,
 	RCKConsoleUZEBOX = 80,
+	RCKConsoleFamicomDiskSystem = 81,
 
 	RCKConsoleHubs = 100,
-	RCKConsoleEvents = 101
+	RCKConsoleEvents = 101,
+	RCKConsoleStandalone = 102
 };
 
-typedef NS_ENUM(char, RCKMemoryType) {
+typedef NS_ENUM(unsigned char, RCKMemoryType) {
 	/*! normal system memory */
 	RCKMemoryTypeSystemRAM,
 	/*! memory that persists between sessions */

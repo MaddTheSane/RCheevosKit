@@ -17,7 +17,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// Normally, an emulator stores it's RAM in a singular contiguous buffer,
 	/// which makes reading from a RetroAchievements address simple:
 	///
-	/// ```
+	/// ```objc
 	/// if (address + num_bytes >= RAM_size)
 	///   return [NSData data];
 	/// return [NSData dataWithBytes:&RAM[address] length:num_bytes]
@@ -121,6 +121,10 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// All pending unlocks have been completed.
 	@objc optional func clientReconnected(_ client: Client)
 	
+	/// All achievements for the subset have been earned.
+	@objc(clientCleared:eventSubset:)
+	optional func clientCleared(_ client: Client, event subset: Client.Subset)
+
 	/// Callback for logging or displaying a message.
 	@objc optional func client(_ client: Client, receivedMessage: String)
 }
@@ -345,6 +349,9 @@ final public class Client: NSObject {
 				
 			case UInt32(RC_CLIENT_EVENT_RECONNECTED):
 				aSelf.delegate?.clientReconnected?(aSelf)
+				
+			case UInt32(RC_CLIENT_EVENT_SUBSET_COMPLETED):
+				aSelf.delegate?.clientCleared?(aSelf, event: Subset(subset: event.pointee.subset))
 
 			default:
 				print("Unknown event type \(event.pointee.type)!")
@@ -370,6 +377,14 @@ final public class Client: NSObject {
 	/// Will reset all achievements and leaderboards to their initial state (includes hiding indicators/trackers).
 	public func reset() {
 		rc_client_reset(_client)
+	}
+	
+	@objc(subsetInfoForID:)
+	public func subsetInfo(_ id: UInt32) -> Subset? {
+		guard let aSub = rc_client_get_subset_info(_client, id) else {
+			return nil
+		}
+		return Subset(subset: aSub)
 	}
 	
 	private func achievementTriggered(_ achievement: UnsafePointer<rc_client_achievement_t>!) {

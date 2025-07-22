@@ -39,7 +39,7 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 			imageURL = nil
 		}
 		identifier = gi.pointee.id
-		consoleID = RCKConsoleIdentifier(rawValue: Int32(gi.pointee.console_id))!
+		consoleID = RCKConsoleIdentifier(rawValue: Int32(bitPattern: gi.pointee.console_id))!
 		title = String(cString: gi.pointee.title)
 		gameHash = String(cString: gi.pointee.hash)
 		badgeName = String(cString: gi.pointee.badge_name)
