@@ -470,6 +470,11 @@ final public class Client: NSObject {
 		}
 	}
 	
+	@objc(gameLoaded)
+	public var isGameLoaded: Bool {
+		return rc_client_is_game_loaded(_client) != 0
+	}
+	
 	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) {
 		if result == RC_OK {
 			delegate?.gameChangedSuccessfully?(client: self)
