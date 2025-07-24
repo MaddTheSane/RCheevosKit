@@ -14,7 +14,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// RetroAchievements addresses start at `$00000000`, which normally represents the first physical byte
 	/// of memory for the system.
 	///
-	/// Normally, an emulator stores it's RAM in a singular contiguous buffer,
+	/// Normally, an emulator stores its RAM in a singular contiguous buffer,
 	/// which makes reading from a RetroAchievements address simple:
 	///
 	/// ```objc
@@ -129,7 +129,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc optional func client(_ client: Client, receivedMessage: String)
 }
 
-private var _initErrors: () = {
+private let _initErrors: () = {
 	NSError.setUserInfoValueProvider(forDomain: RCKError.errorDomain) { err1, userInfo in
 		guard let err = err1 as? RCKError else {
 			return nil
@@ -188,7 +188,14 @@ final public class Client: NSObject {
 			let postStr = String(cString: postCStr)
 			cocoaRequest.httpBody = postStr.data(using: .utf8)
 			cocoaRequest.httpMethod = "POST"
+			if let aCStr = request?.pointee.content_type {
+				cocoaRequest.setValue(String(cString: aCStr), forHTTPHeaderField: "Content-Type")
+			}
 		}
+		var userAgentClause: [Int8] = [Int8](repeating: 0, count: 52)
+		//TODO: store this? Is the overhead of having it constantly created worth storing it?
+		rc_client_get_user_agent_clause(_client, &userAgentClause, userAgentClause.count)
+		cocoaRequest.setValue(String(cString: userAgentClause), forHTTPHeaderField: "User-Agent")
 		let task = session.dataTask(with: cocoaRequest) { dat, response, err in
 			let trueResponse = response as! HTTPURLResponse
 			var server_response = rc_api_server_response_t()
