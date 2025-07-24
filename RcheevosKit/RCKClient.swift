@@ -797,7 +797,7 @@ final public class Client: NSObject {
 		}
 	}
 	
-	@objc(RCKUserProgressEntry)
+	@objc(RCKUserProgressEntry) @objcMembers
 	public final class UserProgressEntry: NSObject, Codable, Sendable {
 		public let gameID: UInt32
 		public let countOfAchievements: UInt32
