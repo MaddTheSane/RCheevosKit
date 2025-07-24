@@ -770,37 +770,31 @@ final public class Client: NSObject {
 	@objc(allUserProgressForConsole:completionHandler:)
 	public func allUserProgress(console: RCKConsoleIdentifier) async throws -> [UserProgressEntry] {
 		return try await withCheckedThrowingContinuation { continuation in
-			allUserProgress(console: console) { res in
-				continuation.resume(with: res)
-			}
+			let anObj = FetchAllUserProgressCallback(callback: continuation)
+			let aCall = Unmanaged.passRetained(anObj).toOpaque()
+			
+			rc_client_begin_fetch_all_user_progress(_client, UInt32(console.rawValue), { result, errorMessage, list, client, ch in
+				let callback2: FetchAllUserProgressCallback = Unmanaged.fromOpaque(ch!).takeRetainedValue()
+				guard result == R_OK else {
+					var errorUserInfo: [String: Any] = [:]
+					if let errorMessage {
+						errorUserInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
+					}
+					callback2.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo))
+					return
+				}
+				let safeList = UnsafeBufferPointer(start: list?.pointee.entries, count: Int(list?.pointee.num_entries ?? 0))
+				callback2.callback.resume(returning: safeList.map({UserProgressEntry(raInternal: $0)}))
+			}, aCall)
 		}
 	}
 	
 	private class FetchAllUserProgressCallback: NSObject {
-		let callback: (Result<[UserProgressEntry], any Error>) -> Void
+		let callback: CheckedContinuation<[UserProgressEntry], any Error>
 		
-		init(callback: @escaping (Result<[UserProgressEntry], any Error>) -> Void) {
+		init(callback: CheckedContinuation<[UserProgressEntry], any Error>) {
 			self.callback = callback
 		}
-	}
-	
-	private func allUserProgress(console: RCKConsoleIdentifier, completionHandler: @escaping (Result<[UserProgressEntry], any Error>) -> Void) {
-		let anObj = FetchAllUserProgressCallback(callback: completionHandler)
-		let aCall = Unmanaged.passRetained(anObj).toOpaque()
-
-		rc_client_begin_fetch_all_user_progress(_client, UInt32(console.rawValue), { result, errorMessage, list, client, ch in
-			let callback2: FetchAllUserProgressCallback = Unmanaged.fromOpaque(ch!).takeRetainedValue()
-			guard result == R_OK else {
-				var errorUserInfo: [String: Any] = [:]
-				if let errorMessage {
-					errorUserInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
-				}
-				callback2.callback(.failure(RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo)))
-				return
-			}
-			let safeList = UnsafeBufferPointer(start: list?.pointee.entries, count: Int(list?.pointee.num_entries ?? 0))
-			callback2.callback(.success(safeList.map({UserProgressEntry(raInternal: $0)})))
-		}, aCall)
 	}
 	
 	@objc(RCKUserProgressEntry)
