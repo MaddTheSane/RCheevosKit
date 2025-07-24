@@ -39,14 +39,14 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 			imageURL = nil
 		}
 		identifier = gi.pointee.id
-		consoleID = RCKConsoleIdentifier(rawValue: Int32(bitPattern: gi.pointee.console_id))!
+		consoleID = RCKConsoleIdentifier(rawValue: gi.pointee.console_id)!
 		title = String(cString: gi.pointee.title)
 		gameHash = String(cString: gi.pointee.hash)
 		badgeName = String(cString: gi.pointee.badge_name)
 	}
 	
 	public override var description: String {
-		return "\(title) hash \(gameHash), console \(consoleID.name)"
+		return "\(title) hash \(gameHash), console \(consoleID.description)"
 	}
 	
 	public static var supportsSecureCoding: Bool {
@@ -55,7 +55,7 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 	
 	public func encode(with coder: NSCoder) {
 		coder.encode(Int32(bitPattern: identifier), forKey: GameInfo.CodingKeys.identifier.stringValue)
-		coder.encode(consoleID.rawValue, forKey: GameInfo.CodingKeys.consoleID.stringValue)
+		coder.encode(Int32(bitPattern: consoleID.rawValue), forKey: GameInfo.CodingKeys.consoleID.stringValue)
 		coder.encode(title as NSString, forKey: GameInfo.CodingKeys.title.stringValue)
 		coder.encode(gameHash as NSString, forKey: GameInfo.CodingKeys.gameHash.stringValue)
 		coder.encode(badgeName as NSString, forKey: GameInfo.CodingKeys.badgeName.stringValue)
@@ -65,7 +65,7 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 	public required init?(coder: NSCoder) {
 		identifier = UInt32(bitPattern: coder.decodeInt32(forKey: GameInfo.CodingKeys.identifier.stringValue))
 		let preconsole = coder.decodeInt32(forKey: GameInfo.CodingKeys.consoleID.stringValue)
-		guard let postConsole = RCKConsoleIdentifier(rawValue: preconsole) else {
+		guard let postConsole = RCKConsoleIdentifier(rawValue: UInt32(bitPattern: preconsole)) else {
 			coder.failWithError(CocoaError(.coderInvalidValue))
 			return nil
 		}

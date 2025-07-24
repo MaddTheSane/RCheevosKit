@@ -760,6 +760,61 @@ final public class Client: NSObject {
 		return GameInfo(gi: gi)
 	}
 	
+	/// Gets all progress for the given console asynchonously. This query returns the total number of achievements for all games
+	/// tracked by this console, as well as the user’s achievement unlock count for both softcore and hardcore modes.
+	@objc(allUserProgressForConsole:completionHandler:)
+	public func allUserProgress(console: RCKConsoleIdentifier) async throws -> [UserProgressEntry] {
+		return try await withCheckedThrowingContinuation { continuation in
+			allUserProgress(console: console) { res in
+				continuation.resume(with: res)
+			}
+		}
+	}
+	
+	private class FetchAllUserProgressCallback: NSObject {
+		let callback: (Result<[UserProgressEntry], any Error>) -> Void
+		
+		init(callback: @escaping (Result<[UserProgressEntry], any Error>) -> Void) {
+			self.callback = callback
+		}
+	}
+	
+	private func allUserProgress(console: RCKConsoleIdentifier, completionHandler: @escaping (Result<[UserProgressEntry], any Error>) -> Void) {
+		let anObj = FetchAllUserProgressCallback(callback: completionHandler)
+		let aCall = Unmanaged.passRetained(anObj).toOpaque()
+
+		rc_client_begin_fetch_all_user_progress(_client, UInt32(console.rawValue), { result, errorMessage, list, client, ch in
+			let callback2: FetchAllUserProgressCallback = Unmanaged.fromOpaque(ch!).takeRetainedValue()
+			guard result == R_OK else {
+				var errorUserInfo: [String: Any] = [:]
+				if let errorMessage {
+					errorUserInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
+				}
+				callback2.callback(.failure(RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo)))
+				return
+			}
+			let safeList = UnsafeBufferPointer(start: list?.pointee.entries, count: Int(list?.pointee.num_entries ?? 0))
+			callback2.callback(.success(safeList.map({UserProgressEntry(raInternal: $0)})))
+		}, aCall)
+	}
+	
+	@objc(RCKUserProgressEntry)
+	public final class UserProgressEntry: NSObject, Codable, Sendable {
+		public let gameID: UInt32
+		public let countOfAchievements: UInt32
+		public let countOfUnlockedAchievements: UInt32
+		public let countOfUnlockedAchievementsHardcore: UInt32
+		
+		@nonobjc
+		internal init(raInternal: rc_client_all_user_progress_entry_t) {
+			self.gameID = raInternal.game_id
+			self.countOfAchievements = raInternal.num_achievements
+			self.countOfUnlockedAchievements = raInternal.num_unlocked_achievements
+			self.countOfUnlockedAchievementsHardcore = raInternal.num_unlocked_achievements_hardcore
+			super.init()
+		}
+	}
+	
 	// MARK: - Logging
 
 	@objc(RCKClientLogLevel)
@@ -791,12 +846,9 @@ extension RCKError.Code: CustomStringConvertible {
 }
 
 extension RCKConsoleIdentifier: CustomStringConvertible, CustomDebugStringConvertible, Codable {
-	@inlinable public var description: String {
-		return self.name
-	}
 	
 	public var debugDescription: String {
-		return "\(self.name) (\(self.rawValue))"
+		return "\(self.description) (\(self.rawValue))"
 	}
 }
 

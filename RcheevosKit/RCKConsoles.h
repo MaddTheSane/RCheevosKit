@@ -10,7 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 //Must match defines in rc_consoles.h!
-typedef NS_ENUM(int, RCKConsoleIdentifier) {
+typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsoleUnknown = 0,
 	RCKConsoleMegaDrive = 1,
 	RCKConsoleNintendo64 = 2,
@@ -117,7 +117,7 @@ typedef NS_ENUM(unsigned char, RCKMemoryType) {
 };
 
 
-FOUNDATION_EXPORT NSString *RCKConsoleGetName(RCKConsoleIdentifier ident) NS_SWIFT_NAME(getter:RCKConsoleIdentifier.name(self:));
+FOUNDATION_EXPORT NSString *RCKConsoleGetName(RCKConsoleIdentifier ident) NS_SWIFT_NAME(getter:RCKConsoleIdentifier.description(self:));
 
 @interface RCKMemoryRegion : NSObject
 
