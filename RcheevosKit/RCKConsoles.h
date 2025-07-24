@@ -130,7 +130,7 @@ FOUNDATION_EXPORT NSString *RCKConsoleGetName(RCKConsoleIdentifier ident) NS_SWI
 @property (readonly) unsigned endAddress;
 /*! Real address for first address of block. */
 @property (readonly) unsigned realAddress;
-/*! \c RCKMemoryType for block. */
+/*! `RCKMemoryType` for block. */
 @property (readonly) RCKMemoryType memoryType;
 /*! Short description of block. */
 @property (readonly, copy) NSString *memoryDescription;

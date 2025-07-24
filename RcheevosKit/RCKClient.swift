@@ -185,8 +185,8 @@ final public class Client: NSObject {
 		}
 		var cocoaRequest = URLRequest(url: theURL)
 		if let postCStr = request?.pointee.post_data {
-			let postStr = String(cString: postCStr)
-			cocoaRequest.httpBody = postStr.data(using: .utf8)
+			let dat1 = UnsafeBufferPointer(start: postCStr, sentinel: {0 == $0})
+			cocoaRequest.httpBody = Data(buffer: dat1)
 			cocoaRequest.httpMethod = "POST"
 			if let aCStr = request?.pointee.content_type {
 				cocoaRequest.setValue(String(cString: aCStr), forHTTPHeaderField: "Content-Type")
@@ -920,5 +920,52 @@ public extension Client {
 		public override var description: String {
 			return "ID ‘\(identifier)’, \(display)"
 		}
+	}
+}
+
+internal extension UnsafeBufferPointer {
+	/// Creates an `UnsafeBufferPointer` over the contiguous `Element` instances beginning
+	/// at `start`, iterating until `sentinelChecker` returns `true`.
+	///
+	/// This is great for array pointers that have an unknown number of elements but does have
+	/// a terminating element, or *sentinel*, that indicates the end of the array.
+	/// The sentinal isn't included in the buffer.
+	/// - parameter start: the pointer to start from.
+	/// - parameter sentinelChecker: The block that checks if the current `Element`
+	/// is the sentinel, or last object in an array. Return `true` if `toCheck`
+	/// matches the characteristic of the sentinal.
+	/// - parameter toCheck: The current element to check.
+	@inlinable init<E>(start: UnsafePointer<Element>, sentinel sentinelChecker: (_ toCheck: Element) throws(E) -> Bool) throws(E) {
+		var toIterate = start
+		
+		while !(try sentinelChecker(toIterate.pointee)) {
+			toIterate = toIterate.advanced(by: 1)
+		}
+		
+		self = UnsafeBufferPointer(start: start, count: start.distance(to: toIterate))
+	}
+	
+	/// Creates an `UnsafeBufferPointer` over the contiguous `Element` instances
+	/// beginning at `start`, iterating until `sentinelChecker` returns `true` or `maximum`
+	/// iterations have happened.
+	///
+	/// This is great for array pointers that have an unknown number of elements but does have
+	/// a terminating element, or *sentinel*, that indicates the end of the array.
+	/// The sentinal isn't included in the buffer.
+	/// - parameter start: the pointer to start from.
+	/// - parameter maximum: The longest iteration to look out for. Any elements after this
+	/// are not included in the buffer.
+	/// - parameter sentinelChecker: The block that checks if the current `Element`
+	/// is the sentinel, or last object in an array. Return `true` if `toCheck`
+	/// matches the characteristic of the sentinal.
+	/// - parameter toCheck: The current element to check.
+	@inlinable init<E>(start: UnsafePointer<Element>, maximum: Int, sentinel sentinelChecker: (_ toCheck: Element) throws(E) -> Bool) throws(E) {
+		var toIterate = start
+		
+		while !(try sentinelChecker(toIterate.pointee)) && start.distance(to: toIterate) > maximum {
+			toIterate = toIterate.advanced(by: 1)
+		}
+		
+		self = UnsafeBufferPointer(start: start, count: start.distance(to: toIterate))
 	}
 }
