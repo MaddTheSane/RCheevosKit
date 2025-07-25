@@ -423,8 +423,7 @@ final public class Client: NSObject {
 			var dict = [String: Any]()
 			if let errorMessage {
 				let tmpStr = String(cString: errorMessage)
-				dict[NSLocalizedDescriptionKey] = tmpStr
-				dict[NSDebugDescriptionErrorKey] = tmpStr
+				dict[NSLocalizedFailureReasonErrorKey] = tmpStr
 			}
 			delegate?.gameFailedToLoad(client: self, error: NSError(domain: RCKErrorDomain, code: Int(result), userInfo: dict))
 		}
@@ -546,7 +545,7 @@ final public class Client: NSObject {
 		var buffer = Data(count: bufferSize)
 		
 		let success = buffer.withUnsafeMutableBytes { umrbp in
-			return rc_client_serialize_progress(_client, umrbp.baseAddress)
+			return rc_client_serialize_progress_sized(_client, umrbp.baseAddress, umrbp.count)
 		}
 		guard success == RC_OK else {
 			throw RCKError(RCKError.Code(rawValue: success) ?? .invalidState)
@@ -565,7 +564,7 @@ final public class Client: NSObject {
 		}
 		
 		let result = from.withUnsafeBytes { urbp in
-			return rc_client_deserialize_progress(_client, urbp.baseAddress)
+			return rc_client_deserialize_progress_sized(_client, urbp.baseAddress, urbp.count)
 		}
 		
 		guard result == RC_OK else {
@@ -612,11 +611,68 @@ final public class Client: NSObject {
 			var userInfo = [String: Any]()
 			if let errorMessage {
 				let tmpStr = String(cString: errorMessage)
-				userInfo[NSLocalizedDescriptionKey] = tmpStr
-				userInfo[NSDebugDescriptionErrorKey] = tmpStr
+				userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
 			}
 			
 			delegate?.loginFailed(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
+		}
+	}
+	
+	private class LoginProgressCallback: NSObject {
+		let callback: CheckedContinuation<Void, any Error>
+		
+		init(callback: CheckedContinuation<Void, any Error>) {
+			self.callback = callback
+		}
+	}
+	
+	/// Login with a user name and a password.
+	/// Does *not* call ``ClientDelegate.loginSuccessful(client:)`` or
+	/// ``ClientDelegate.loginFailed(client:with:)``.
+	public func loginWith(userName: String, password: String) async throws {
+		// This will generate an HTTP payload and call the server_call chain above.
+		// Eventually, login_callback will be called to let us know if the login was successful.
+		try await withCheckedThrowingContinuation { cont in
+			let cb = LoginProgressCallback(callback: cont)
+			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, _, bCall in
+				let cCall: LoginProgressCallback = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+				if result == RC_OK {
+					cCall.callback.resume(returning: ())
+				} else {
+					var userInfo = [String: Any]()
+					if let errorMessage {
+						let tmpStr = String(cString: errorMessage)
+						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
+					}
+					cCall.callback.resume(throwing: NSError(domain: "RCKErrorDomain", code: Int(result), userInfo: userInfo))
+				}
+			}, aCall)
+		}
+	}
+	
+	/// Login with a user name and a password.
+	/// Does *not* call ``ClientDelegate.loginSuccessful(client:)`` or
+	/// ``ClientDelegate.loginFailed(client:with:)``.
+	public func loginWith(userName: String, token: String) async throws {
+		// This will generate an HTTP payload and call the server_call chain above.
+		// Eventually, login_callback will be called to let us know if the login was successful.
+		try await withCheckedThrowingContinuation { cont in
+			let cb = LoginProgressCallback(callback: cont)
+			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, _, bCall in
+				let cCall: LoginProgressCallback = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+				if result == RC_OK {
+					cCall.callback.resume(returning: ())
+				} else {
+					var userInfo = [String: Any]()
+					if let errorMessage {
+						let tmpStr = String(cString: errorMessage)
+						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
+					}
+					cCall.callback.resume(throwing: NSError(domain: "RCKErrorDomain", code: Int(result), userInfo: userInfo))
+				}
+			}, aCall)
 		}
 	}
 	
@@ -671,7 +727,7 @@ final public class Client: NSObject {
 	/// Returns the current user information.
 	///
 	/// Will be `nil` if not logged in.
-	func userInfo() -> UserInfo? {
+	public func userInfo() -> UserInfo? {
 		guard let usrInf = rc_client_get_user_info(_client) else {
 			return nil
 		}
@@ -768,7 +824,7 @@ final public class Client: NSObject {
 	/// Gets all progress for the given console asynchonously. This query returns the total number of achievements for all games
 	/// tracked by this console, as well as the user’s achievement unlock count for both softcore and hardcore modes.
 	@objc(allUserProgressForConsole:completionHandler:)
-	public func allUserProgress(console: RCKConsoleIdentifier) async throws -> [UserProgressEntry] {
+	public func allUserProgress(for console: RCKConsoleIdentifier) async throws -> [UserProgressEntry] {
 		return try await withCheckedThrowingContinuation { continuation in
 			let anObj = FetchAllUserProgressCallback(callback: continuation)
 			let aCall = Unmanaged.passRetained(anObj).toOpaque()
@@ -778,7 +834,7 @@ final public class Client: NSObject {
 				guard result == R_OK else {
 					var errorUserInfo: [String: Any] = [:]
 					if let errorMessage {
-						errorUserInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
+						errorUserInfo[NSLocalizedFailureReasonErrorKey] = String(cString: errorMessage)
 					}
 					callback2.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo))
 					return
