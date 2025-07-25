@@ -629,6 +629,8 @@ final public class Client: NSObject {
 	/// Login with a user name and a password.
 	/// Does *not* call ``ClientDelegate.loginSuccessful(client:)`` or
 	/// ``ClientDelegate.loginFailed(client:with:)``.
+	///
+	/// - throws: If login failed.
 	public func loginWith(userName: String, password: String) async throws {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
@@ -654,6 +656,8 @@ final public class Client: NSObject {
 	/// Login with a user name and a password.
 	/// Does *not* call ``ClientDelegate.loginSuccessful(client:)`` or
 	/// ``ClientDelegate.loginFailed(client:with:)``.
+	///
+	/// - throws: If login failed.
 	public func loginWith(userName: String, token: String) async throws {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
