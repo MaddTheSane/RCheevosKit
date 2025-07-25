@@ -618,10 +618,10 @@ final public class Client: NSObject {
 		}
 	}
 	
-	private class LoginProgressCallback: NSObject {
-		let callback: CheckedContinuation<Void, any Error>
+	private class RCKProgressCallback<A: Sendable> {
+		let callback: CheckedContinuation<A, any Error>
 		
-		init(callback: CheckedContinuation<Void, any Error>) {
+		init(callback: CheckedContinuation<A, any Error>) {
 			self.callback = callback
 		}
 	}
@@ -633,10 +633,10 @@ final public class Client: NSObject {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
 		try await withCheckedThrowingContinuation { cont in
-			let cb = LoginProgressCallback(callback: cont)
+			let cb = RCKProgressCallback<Void>(callback: cont)
 			let aCall = Unmanaged.passRetained(cb).toOpaque()
 			rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, _, bCall in
-				let cCall: LoginProgressCallback = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 				if result == RC_OK {
 					cCall.callback.resume(returning: ())
 				} else {
@@ -658,10 +658,10 @@ final public class Client: NSObject {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
 		try await withCheckedThrowingContinuation { cont in
-			let cb = LoginProgressCallback(callback: cont)
+			let cb = RCKProgressCallback<Void>(callback: cont)
 			let aCall = Unmanaged.passRetained(cb).toOpaque()
 			rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, _, bCall in
-				let cCall: LoginProgressCallback = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 				if result == RC_OK {
 					cCall.callback.resume(returning: ())
 				} else {
@@ -826,11 +826,11 @@ final public class Client: NSObject {
 	@objc(allUserProgressForConsole:completionHandler:)
 	public func allUserProgress(for console: RCKConsoleIdentifier) async throws -> [UserProgressEntry] {
 		return try await withCheckedThrowingContinuation { continuation in
-			let anObj = FetchAllUserProgressCallback(callback: continuation)
+			let anObj = RCKProgressCallback(callback: continuation)
 			let aCall = Unmanaged.passRetained(anObj).toOpaque()
 			
 			rc_client_begin_fetch_all_user_progress(_client, UInt32(console.rawValue), { result, errorMessage, list, client, ch in
-				let callback2: FetchAllUserProgressCallback = Unmanaged.fromOpaque(ch!).takeRetainedValue()
+				let callback2: RCKProgressCallback<[Client.UserProgressEntry]> = Unmanaged.fromOpaque(ch!).takeRetainedValue()
 				guard result == R_OK else {
 					var errorUserInfo: [String: Any] = [:]
 					if let errorMessage {
@@ -842,14 +842,6 @@ final public class Client: NSObject {
 				let safeList = UnsafeBufferPointer(start: list?.pointee.entries, count: Int(list?.pointee.num_entries ?? 0))
 				callback2.callback.resume(returning: safeList.map({UserProgressEntry(raInternal: $0)}))
 			}, aCall)
-		}
-	}
-	
-	private class FetchAllUserProgressCallback: NSObject {
-		let callback: CheckedContinuation<[UserProgressEntry], any Error>
-		
-		init(callback: CheckedContinuation<[UserProgressEntry], any Error>) {
-			self.callback = callback
 		}
 	}
 	
