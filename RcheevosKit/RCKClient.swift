@@ -30,11 +30,11 @@ public protocol ClientDelegate: NSObjectProtocol {
 	
 	/// Log-in succeeded.
 	@objc(loginSuccessfulForClient:)
-	func loginSuccessful(client: Client)
+	optional func loginSuccessful(client: Client)
 	
 	/// Log-in failed.
 	@objc(loginFailedForClient:withError:)
-	func loginFailed(client: Client, with: Error)
+	optional func loginFailed(client: Client, with: any Error)
 	
 	/// Called when the runtime wants the emulator reset.
 	///
@@ -99,13 +99,13 @@ public protocol ClientDelegate: NSObjectProtocol {
 	func gameLoadedSuccessfully(client: Client)
 	
 	/// Error loading the game.
-	func gameFailedToLoad(client: Client, error: Error)
+	func gameFailedToLoad(client: Client, error: any Error)
 	
 	/// Game was changed successfully.
 	@objc optional func gameChangedSuccessfully(client: Client)
 
 	/// There was an error changing the game.
-	@objc optional func gameChangeFailed(client: Client, error: Error)
+	@objc optional func gameChangeFailed(client: Client, error: any Error)
 
 	/// User has completed all achievements!
 	@objc func gameCompleted(client: Client)
@@ -184,11 +184,11 @@ final public class Client: NSObject {
 			return
 		}
 		var cocoaRequest = URLRequest(url: theURL)
-		if let postCStr = request?.pointee.post_data {
+		if let postCStr = request!.pointee.post_data {
 			let dat1 = UnsafeBufferPointer(start: postCStr, sentinel: {0 == $0})
 			cocoaRequest.httpBody = Data(buffer: dat1)
 			cocoaRequest.httpMethod = "POST"
-			if let aCStr = request?.pointee.content_type {
+			if let aCStr = request!.pointee.content_type {
 				cocoaRequest.setValue(String(cString: aCStr), forHTTPHeaderField: "Content-Type")
 			}
 		}
@@ -338,12 +338,12 @@ final public class Client: NSObject {
 			case UInt32(RC_CLIENT_EVENT_SERVER_ERROR):
 				let message: String?
 				let api: String?
-				if let aMess = event.pointee.server_error.pointee.error_message {
+				if let aMess = event.pointee.server_error?.pointee.error_message {
 					message = String(cString: aMess)
 				} else {
 					message = nil
 				}
-				if let aMess = event.pointee.server_error.pointee.api {
+				if let aMess = event.pointee.server_error?.pointee.api {
 					api = String(cString: aMess)
 				} else {
 					api = nil
@@ -444,7 +444,6 @@ final public class Client: NSObject {
 			return
 		}
 		_ = url.withUnsafeFileSystemRepresentation { up in
-//			rc_client_begin_identify_and_load_game
 			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), up, nil, 0, { result, errorMessage, client, _ in
 				guard let usrDat = rc_client_get_userdata(client) else {
 					return
@@ -606,7 +605,7 @@ final public class Client: NSObject {
 	
 	private func loginCallback(result: Int32, errorMessage: UnsafePointer<CChar>?) {
 		if result == RC_OK {
-			delegate?.loginSuccessful(client: self)
+			delegate?.loginSuccessful!(client: self)
 		} else {
 			var userInfo = [String: Any]()
 			if let errorMessage {
@@ -614,7 +613,7 @@ final public class Client: NSObject {
 				userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
 			}
 			
-			delegate?.loginFailed(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
+			delegate?.loginFailed!(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
 		}
 	}
 	
@@ -647,7 +646,7 @@ final public class Client: NSObject {
 						let tmpStr = String(cString: errorMessage)
 						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
 					}
-					cCall.callback.resume(throwing: NSError(domain: "RCKErrorDomain", code: Int(result), userInfo: userInfo))
+					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
 				}
 			}, aCall)
 		}
@@ -667,20 +666,23 @@ final public class Client: NSObject {
 			rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, _, bCall in
 				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 				if result == RC_OK {
-					cCall.callback.resume(returning: ())
+					cCall.callback.resume()
 				} else {
 					var userInfo = [String: Any]()
 					if let errorMessage {
 						let tmpStr = String(cString: errorMessage)
 						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
 					}
-					cCall.callback.resume(throwing: NSError(domain: "RCKErrorDomain", code: Int(result), userInfo: userInfo))
+					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
 				}
 			}, aCall)
 		}
 	}
 	
 	/// Login with a user name and a password.
+	///
+	/// Delegate *must* implement ``ClientDelegate.loginSuccessful(client:)`` *and*
+	/// ``ClientDelegate.loginFailed(client:with:)`` if you call this method, otherwise your app will crash.
 	public func loginWith(userName: String, password: String) {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
@@ -694,6 +696,9 @@ final public class Client: NSObject {
 	}
 	
 	/// Login with a user name and a previously-generated token.
+	///
+	/// Delegate *must* implement ``ClientDelegate.loginSuccessful(client:)`` *and*
+	/// ``ClientDelegate.loginFailed(client:with:)`` if you call this method, otherwise your app will crash.
 	public func loginWith(userName: String, token: String) {
 		// This is exactly the same functionality as rc_client_begin_login_with_password, but
 		// uses the token captured from the first login instead of a password.
@@ -843,6 +848,9 @@ final public class Client: NSObject {
 					callback2.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo))
 					return
 				}
+				defer {
+					rc_client_destroy_all_user_progress(list)
+				}
 				let safeList = UnsafeBufferPointer(start: list?.pointee.entries, count: Int(list?.pointee.num_entries ?? 0))
 				callback2.callback.resume(returning: safeList.map({UserProgressEntry(raInternal: $0)}))
 			}, aCall)
@@ -908,7 +916,7 @@ extension RCKConsoleIdentifier: CustomStringConvertible, CustomDebugStringConver
 public extension Client {
 	/// The user info.
 	@objc(RCKClientUserInfo) @objcMembers
-	final class UserInfo: NSObject, Codable {
+	final class UserInfo: NSObject, Sendable, Codable {
 		/// The display name of the user.
 		public let displayName: String
 		/// The user name.
@@ -950,7 +958,7 @@ public extension Client {
 	}
 
 	@objc(RCKLeaderboardTracker) @objcMembers
-	final class LeaderboardTracker: NSObject {
+	final class LeaderboardTracker: NSObject, Sendable, Codable {
 		public let display: String
 		public let identifier: UInt32
 		

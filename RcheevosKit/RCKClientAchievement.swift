@@ -16,7 +16,7 @@ public extension Client {
 	@objc(RCKClientAchievement) @objcMembers
 	final class Achievement: NSObject, Codable, NSSecureCoding {
 		@objc(RCKClientAchievementState)
-		public enum State : UInt8, @unchecked Sendable, Codable, CustomStringConvertible {
+		public enum State : UInt8, Sendable, Codable, CustomStringConvertible {
 			/// Unprocessed.
 			case inactive = 0
 			/// Eligible to trigger.
@@ -78,7 +78,7 @@ public extension Client {
 		public typealias Unlocked = RCKClientAchievementUnlocked
 		
 		@objc(RCKClientAchievementListGrouping)
-		public enum ListGrouping : Int32, @unchecked Sendable, Codable {
+		public enum ListGrouping : Int32, Sendable, Codable {
 			case lockState = 0
 			case progress = 1
 		}

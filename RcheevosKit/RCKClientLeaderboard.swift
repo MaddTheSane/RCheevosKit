@@ -10,10 +10,10 @@ import Foundation
 
 public extension Client {
 	@objc(RCKClientLeaderboard) @objcMembers
-	final class Leaderboard: NSObject, Codable {
+	final class Leaderboard: NSObject, Codable, Sendable {
 		
 		@objc(RCKClientLeaderboardState)
-		public enum State: UInt8, @unchecked Sendable, Codable {
+		public enum State: UInt8, Sendable, Codable {
 			case inactive = 0
 			case active
 			case tracking
@@ -21,7 +21,7 @@ public extension Client {
 		}
 		
 		@objc(RCKClientLeaderboardFormat)
-		public enum Format: UInt8, @unchecked Sendable, Codable {
+		public enum Format: UInt8, Sendable, Codable {
 			case time = 0
 			case score
 			case value
@@ -57,10 +57,10 @@ public extension Client {
 		}
 		
 		@objc(RCKClientLeaderboardScoreboard) @objcMembers
-		final public class Scoreboard: NSObject, Codable {
+		final public class Scoreboard: NSObject, Codable, Sendable {
 			/// Used for scoreboard events. Contains the response from the server when a leaderboard entry is submitted.
 			@objc(RCKClientLeaderboardScoreboardEntry) @objcMembers
-			final public class Entry: NSObject, Codable {
+			final public class Entry: NSObject, Codable, Sendable {
 				/// The user associated to the entry.
 				public let userName: String
 				/// The rank of the entry.

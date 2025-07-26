@@ -43,7 +43,7 @@ final class Bucket: NSObject {
 	}
 	
 	public override var description: String {
-		return "\(label), achievements count: \(achievements.count), bucket \(bucketType.description.lowercased())"
+		return "\(label), achievements count: \(achievements.count), bucket \(bucketType.description)"
 	}
 }
 }
