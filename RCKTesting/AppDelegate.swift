@@ -18,30 +18,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	@IBOutlet var passwordField: NSSecureTextField!
 	@IBOutlet weak var achievementsView: NSOutlineView!
 	@IBOutlet weak var gameNameView: NSTextField!
-	@IBOutlet weak var loginStatus: NSImageView!
+	@MainActor @IBOutlet weak var loginStatus: NSImageView!
 	fileprivate var achievements = [Client.Achievement.Bucket]()
 
 	var client = Client()
 
 	func readMemory(client: RcheevosKit.Client, at address: UInt32, count num_bytes: UInt32) -> Data {
 		return Data()
-	}
-	
-	func loginSuccessful(client: RcheevosKit.Client) {
-		DispatchQueue.main.async {
-			self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
-		}
-	}
-	
-	func loginFailed(client: RcheevosKit.Client, with: Error) {
-		DispatchQueue.main.async {
-			NSSound.beep()
-			self.loginStatus.image = NSImage(named: NSImage.statusUnavailableName)
-
-			let alert = NSAlert(error: with)
-			alert.alertStyle = .critical
-			alert.runModal()
-		}
 	}
 	
 	func restartEmulationRequested(client: RcheevosKit.Client) {
@@ -51,27 +34,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 			alert.messageText = "Restart requested!"
 			
 			alert.runModal()
-		}
-	}
-	
-	func gameLoadedSuccessfully(client: RcheevosKit.Client) {
-		DispatchQueue.main.async {
-			self.loginStatus.image = NSImage(named: NSImage.statusAvailableName)
-			self.achievements = self.client.achievementsList() ?? []
-			self.achievementsView.reloadData()
-			
-			self.gameNameView.stringValue = self.client.gameInfo()?.title ?? "Unknown Game"
-		}
-	}
-	
-	func gameFailedToLoad(client: RcheevosKit.Client, error: Error) {
-		DispatchQueue.main.async {
-			self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
-			NSSound.beep()
-			self.achievements.removeAll()
-			self.achievementsView.reloadData()
-			
-			self.gameNameView.stringValue = "No Game"
 		}
 	}
 	
@@ -109,7 +71,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 			NSSound.beep()
 			return
 		}
-		client.loginWith(userName: name, password: pass)
+		Task {
+			do {
+				try await client.loginWith(userName: name, password: pass)
+				DispatchQueue.main.async {
+					self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
+				}
+			} catch {
+				DispatchQueue.main.async {
+					NSSound.beep()
+					self.loginStatus.image = NSImage(named: NSImage.statusUnavailableName)
+
+					let alert = NSAlert(error: error)
+					alert.alertStyle = .critical
+					alert.runModal()
+				}
+			}
+		}
 	}
 
 	@IBAction func selectGame(_ sender: AnyObject?) {
@@ -117,7 +95,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 		
 		openPanel.beginSheetModal(for: self.window) { response in
 			if response == .OK {
-				self.client.loadGame(from: openPanel.url!)
+				Task {
+					do {
+						try await self.client.loadGame(from: openPanel.url!)
+						DispatchQueue.main.async {
+							self.loginStatus.image = NSImage(named: NSImage.statusAvailableName)
+							self.achievements = self.client.achievementsList() ?? []
+							self.achievementsView.reloadData()
+							
+							self.gameNameView.stringValue = self.client.gameInfo()?.title ?? "Unknown Game"
+						}
+						
+					} catch {
+						DispatchQueue.main.async {
+							NSSound.beep()
+							self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
+							self.achievements.removeAll()
+							self.achievementsView.reloadData()
+							
+							self.gameNameView.stringValue = "No Game"
+							let alert = NSAlert(error: error)
+							alert.runModal()
+						}
+					}
+				}
 			}
 		}
 	}

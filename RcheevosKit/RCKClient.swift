@@ -28,14 +28,6 @@ public protocol ClientDelegate: NSObjectProtocol {
 	@objc(readMemoryForClient:atAddress:count:)
 	func readMemory(client: Client, at address: UInt32, count num_bytes: UInt32) -> Data
 	
-	/// Log-in succeeded.
-	@objc(loginSuccessfulForClient:)
-	optional func loginSuccessful(client: Client)
-	
-	/// Log-in failed.
-	@objc(loginFailedForClient:withError:)
-	optional func loginFailed(client: Client, with: any Error)
-	
 	/// Called when the runtime wants the emulator reset.
 	///
 	/// Usually called when the user wants to enable hardcore mode when a game is running.
@@ -94,18 +86,6 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// The hide event indicates the indicator should no longer be visible.
 	@objc
 	optional func hideProgressIndicator(client: Client)
-
-	/// Game has finished loading.
-	func gameLoadedSuccessfully(client: Client)
-	
-	/// Error loading the game.
-	func gameFailedToLoad(client: Client, error: any Error)
-	
-	/// Game was changed successfully.
-	@objc optional func gameChangedSuccessfully(client: Client)
-
-	/// There was an error changing the game.
-	@objc optional func gameChangeFailed(client: Client, error: any Error)
 
 	/// User has completed all achievements!
 	@objc func gameCompleted(client: Client)
@@ -416,55 +396,63 @@ final public class Client: NSObject {
 	
 	// MARK: -
 	
-	private func loadGameCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) {
-		if result == RC_OK {
-			delegate?.gameLoadedSuccessfully(client: self)
-		} else {
-			var dict = [String: Any]()
-			if let errorMessage {
-				let tmpStr = String(cString: errorMessage)
-				dict[NSLocalizedFailureReasonErrorKey] = tmpStr
-			}
-			delegate?.gameFailedToLoad(client: self, error: NSError(domain: RCKErrorDomain, code: Int(result), userInfo: dict))
-		}
-	}
-	
 	/// Begin loading a game from the selected file URL.
-	@objc(loadGameFromURL:console:)
-	public func loadGame(from url: URL, console: RCKConsoleIdentifier = .unknown) {
+	@objc(loadGameFromURL:console:completionHandler:)
+	public func loadGame(from url: URL, console: RCKConsoleIdentifier = .unknown) async throws {
 		guard url.isFileURL else {
-			DispatchQueue.main.async {
-				self.delegate?.gameFailedToLoad(client: self, error: RCKError(.apiFailure, userInfo:
-																				[NSLocalizedDescriptionKey: "Invalid URL scheme: RcheevosKit cannot load games directly from the internet.",
-																				NSDebugDescriptionErrorKey: "RcheevosKit cannot load games directly from the internet.",
-																	 NSLocalizedRecoverySuggestionErrorKey: "Either connect to the server using Finder or Files, or download the file to your device.",
-																							 NSURLErrorKey: url]))
-
-			}
-			return
+			throw RCKError(.apiFailure, userInfo:
+							[NSLocalizedDescriptionKey: "Invalid URL scheme: RcheevosKit cannot load games directly from the internet.",
+							NSDebugDescriptionErrorKey: "RcheevosKit cannot load games directly from the internet.",
+				 NSLocalizedRecoverySuggestionErrorKey: "Either connect to the server using Finder or Files, or download the file to your device.",
+										 NSURLErrorKey: url])
 		}
-		_ = url.withUnsafeFileSystemRepresentation { up in
-			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), up, nil, 0, { result, errorMessage, client, _ in
-				guard let usrDat = rc_client_get_userdata(client) else {
-					return
-				}
-				let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-				aSelf.loadGameCallback(result: result, errorMessage: errorMessage)
-			}, nil)
+		
+		try await withCheckedThrowingContinuation { cont in
+			let cb = RCKProgressCallback<Void>(callback: cont)
+			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			
+			_ = url.withUnsafeFileSystemRepresentation { up in
+				return rc_client_begin_identify_and_load_game(_client, console.rawValue, up, nil, 0, { result, errorMessage, _, bCall in
+					let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+					guard result == RC_OK else {
+						var dict = [String: Any]()
+						if let errorMessage {
+							let tmpStr = String(cString: errorMessage)
+							dict[NSLocalizedFailureReasonErrorKey] = tmpStr
+						}
+						cCall.callback.resume(throwing: RCKError(.apiFailure, userInfo: dict))
+						return
+					}
+					
+					cCall.callback.resume(returning: ())
+				}, aCall)
+			}
 		}
 	}
 	
 	/// Begin loading a game from the passed-in data.
-	@objc(loadGameFromData:console:)
-	public func loadGame(from: Data, console: RCKConsoleIdentifier = .unknown) {
-		_ = from.withUnsafeBytes { urbp in
-			return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, _ in
-				guard let usrDat = rc_client_get_userdata(client) else {
-					return
-				}
-				let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-				aSelf.loadGameCallback(result: result, errorMessage: errorMessage)
-			}, nil)
+	@objc(loadGameFromData:console:completionHandler:)
+	public func loadGame(from: Data, console: RCKConsoleIdentifier = .unknown) async throws {
+		try await withCheckedThrowingContinuation { cont in
+			let cb = RCKProgressCallback<Void>(callback: cont)
+			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			
+			_ = from.withUnsafeBytes { urbp in
+				return rc_client_begin_identify_and_load_game(_client, UInt32(console.rawValue), nil, urbp.baseAddress, urbp.count, { result, errorMessage, _, bCall in
+					let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+					guard result == RC_OK else {
+						var dict = [String: Any]()
+						if let errorMessage {
+							let tmpStr = String(cString: errorMessage)
+							dict[NSLocalizedFailureReasonErrorKey] = tmpStr
+						}
+						cCall.callback.resume(throwing: RCKError(.apiFailure, userInfo: dict))
+						return
+					}
+					
+					cCall.callback.resume(returning: ())
+				}, aCall)
+			}
 		}
 	}
 	
@@ -473,9 +461,8 @@ final public class Client: NSObject {
 		return rc_client_is_game_loaded(_client) != 0
 	}
 	
-	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) {
+	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) throws {
 		if result == RC_OK {
-			delegate?.gameChangedSuccessfully?(client: self)
 			return
 		}
 		
@@ -491,43 +478,62 @@ final public class Client: NSObject {
 			err = RCKError(RCKError.Code(rawValue: result)!, userInfo: [NSLocalizedDescriptionKey: errStr,
 																	   NSDebugDescriptionErrorKey: errStr])
 		}
-		delegate?.gameChangeFailed?(client: self, error: err)
+		throw err
 	}
 	
-	@objc(changeMediaToURL:)
-	public func changeMedia(to url: URL) {
+	@objc(changeMediaToURL:completionHandler:)
+	public func changeMedia(to url: URL) async throws {
 		guard url.isFileURL else {
-			DispatchQueue.main.async {
-				self.delegate?.gameFailedToLoad(client: self, error: RCKError(.apiFailure, userInfo:
-																				[NSLocalizedDescriptionKey: "Invalid URL scheme: RcheevosKit cannot load games directly from the internet.",
-																				NSDebugDescriptionErrorKey: "RcheevosKit cannot load games directly from the internet.",
-																	 NSLocalizedRecoverySuggestionErrorKey: "Either connect to the server using Finder or Files, or download the file to your device.",
-																							 NSURLErrorKey: url]))
-
-			}
-			return
+			throw RCKError(.apiFailure, userInfo:
+							[NSLocalizedDescriptionKey: "Invalid URL scheme: RcheevosKit cannot load games directly from the internet.",
+							NSDebugDescriptionErrorKey: "RcheevosKit cannot load games directly from the internet.",
+				 NSLocalizedRecoverySuggestionErrorKey: "Either connect to the server using Finder or Files, or download the file to your device.",
+										 NSURLErrorKey: url])
 		}
-		_ = url.withUnsafeFileSystemRepresentation { up in
-			return rc_client_begin_identify_and_change_media(_client, up, nil, 0, { result, errorMessage, client, _ in
-				guard let usrDat = rc_client_get_userdata(client) else {
-					return
-				}
-				let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-				aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage)
-			}, nil)
+		try await withCheckedThrowingContinuation { cont in
+			let cb = RCKProgressCallback<Void>(callback: cont)
+			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			
+			_ = url.withUnsafeFileSystemRepresentation { up in
+				return rc_client_begin_identify_and_change_media(_client, up, nil, 0, { result, errorMessage, client, bCall in
+					let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+					guard let usrDat = rc_client_get_userdata(client) else {
+						cCall.callback.resume(throwing: RCKError(.apiFailure, userInfo: [NSLocalizedDescriptionKey: "Unable to retrieve client data."]))
+						return
+					}
+					let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
+					do {
+						try aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage)
+						cCall.callback.resume()
+					} catch {
+						cCall.callback.resume(throwing: error)
+					}
+				}, aCall)
+			}
 		}
 	}
 	
-	@objc(changeMediaToData:)
-	public func changeMedia(to data: Data) {
-		_ = data.withUnsafeBytes { urbp in
-			return rc_client_begin_identify_and_change_media(_client, nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, _ in
-				guard let usrDat = rc_client_get_userdata(client) else {
-					return
-				}
-				let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-				aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage)
-			}, nil)
+	@objc(changeMediaToData:completionHandler:)
+	public func changeMedia(to data: Data) async throws {
+		try await withCheckedThrowingContinuation { cont in
+			let cb = RCKProgressCallback<Void>(callback: cont)
+			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			_ = data.withUnsafeBytes { urbp in
+				return rc_client_begin_identify_and_change_media(_client, nil, urbp.baseAddress, urbp.count, { result, errorMessage, client, bCall in
+					let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
+					guard let usrDat = rc_client_get_userdata(client) else {
+						cCall.callback.resume(throwing: RCKError(.apiFailure, userInfo: [NSLocalizedDescriptionKey: "Unable to retrieve client data."]))
+						return
+					}
+					let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
+					do {
+						try aSelf.mediaChangedCallback(result: result, errorMessage: errorMessage)
+						cCall.callback.resume()
+					} catch {
+						cCall.callback.resume(throwing: error)
+					}
+				}, aCall)
+			}
 		}
 	}
 
@@ -603,20 +609,6 @@ final public class Client: NSObject {
 	
 	// MARK: - User Account stuff
 	
-	private func loginCallback(result: Int32, errorMessage: UnsafePointer<CChar>?) {
-		if result == RC_OK {
-			delegate?.loginSuccessful!(client: self)
-		} else {
-			var userInfo = [String: Any]()
-			if let errorMessage {
-				let tmpStr = String(cString: errorMessage)
-				userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
-			}
-			
-			delegate?.loginFailed!(client: self, with: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
-		}
-	}
-	
 	private class RCKProgressCallback<A: Sendable> {
 		let callback: CheckedContinuation<A, any Error>
 		
@@ -626,8 +618,6 @@ final public class Client: NSObject {
 	}
 	
 	/// Login with a user name and a password.
-	/// Does *not* call ``ClientDelegate.loginSuccessful(client:)`` or
-	/// ``ClientDelegate.loginFailed(client:with:)``.
 	///
 	/// - throws: If login failed.
 	public func loginWith(userName: String, password: String) async throws {
@@ -636,6 +626,7 @@ final public class Client: NSObject {
 		try await withCheckedThrowingContinuation { cont in
 			let cb = RCKProgressCallback<Void>(callback: cont)
 			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			//TODO: set up some way to cancel log-ins?
 			rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, _, bCall in
 				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 				if result == RC_OK {
@@ -653,8 +644,6 @@ final public class Client: NSObject {
 	}
 	
 	/// Login with a user name and a password.
-	/// Does *not* call ``ClientDelegate.loginSuccessful(client:)`` or
-	/// ``ClientDelegate.loginFailed(client:with:)``.
 	///
 	/// - throws: If login failed.
 	public func loginWith(userName: String, token: String) async throws {
@@ -663,6 +652,7 @@ final public class Client: NSObject {
 		try await withCheckedThrowingContinuation { cont in
 			let cb = RCKProgressCallback<Void>(callback: cont)
 			let aCall = Unmanaged.passRetained(cb).toOpaque()
+			//TODO: set up some way to cancel log-ins?
 			rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, _, bCall in
 				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 				if result == RC_OK {
@@ -679,47 +669,17 @@ final public class Client: NSObject {
 		}
 	}
 	
-	/// Login with a user name and a password.
-	///
-	/// Delegate *must* implement ``ClientDelegate.loginSuccessful(client:)`` *and*
-	/// ``ClientDelegate.loginFailed(client:with:)`` if you call this method, otherwise your app will crash.
-	public func loginWith(userName: String, password: String) {
-		// This will generate an HTTP payload and call the server_call chain above.
-		// Eventually, login_callback will be called to let us know if the login was successful.
-		rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, client, _ in
-			guard let usrDat = rc_client_get_userdata(client) else {
-				return
-			}
-			let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-			aSelf.loginCallback(result: result, errorMessage: errorMessage)
-		}, nil)
-	}
-	
-	/// Login with a user name and a previously-generated token.
-	///
-	/// Delegate *must* implement ``ClientDelegate.loginSuccessful(client:)`` *and*
-	/// ``ClientDelegate.loginFailed(client:with:)`` if you call this method, otherwise your app will crash.
-	public func loginWith(userName: String, token: String) {
-		// This is exactly the same functionality as rc_client_begin_login_with_password, but
-		// uses the token captured from the first login instead of a password.
-		// Note that it uses the same callback.
-		rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, client, _ in
-			guard let usrDat = rc_client_get_userdata(client) else {
-				return
-			}
-			let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-			aSelf.loginCallback(result: result, errorMessage: errorMessage)
-		}, nil)
-	}
-	
 	/// Logout of the current user account.
 	public func logout() {
 		rc_client_logout(_client)
 	}
 	
 	/// Is the user logged in?
+	@objc(loggedIn)
 	public var isLoggedIn: Bool {
-		return rc_client_get_user_info(_client) != nil
+		@objc(isLoggedIn) get {
+			return rc_client_get_user_info(_client) != nil
+		}
 	}
 	
 	/// The log-in token needed to conveniently log into Rcheevos.
