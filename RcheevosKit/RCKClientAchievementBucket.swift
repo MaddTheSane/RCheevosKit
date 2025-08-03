@@ -31,19 +31,18 @@ final class Bucket: NSObject {
 		achievements = cAchievements.map({Client.Achievement(retroPointer: $0!, stateIcon: Client.Achievement.State(rawValue: $0!.pointee.state) ?? .disabled)})
 		let aURLs = cAchievements.map { achieve -> URL? in
 			var url = [CChar](repeating: 0, count: 1024)
-			var actualURL: URL? = nil
 			
 			if rc_client_achievement_get_image_url(achieve, Int32(achieve!.pointee.state), &url, url.count) == RC_OK {
-				actualURL = URL(string: String(cString: url))
+				return URL(string: String(cString: url))
 			}
-			return actualURL
+			return nil
 		}
 		achievementsAndImageURLs = Array(zip(achievements, aURLs))
 		achievementImageURLs = aURLs.map({$0 ?? URL(fileURLWithPath: "/dev/null")})
 	}
 	
 	public override var description: String {
-		return "\(label), achievements count: \(achievements.count), bucket \(bucketType.description)"
+		return "\(label), achievements count: \(achievements.count), bucket \(bucketType)"
 	}
 }
 }

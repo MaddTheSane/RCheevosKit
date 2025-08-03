@@ -46,11 +46,18 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 	}
 	
 	public override var description: String {
-		return "\(title) hash \(gameHash), console \(consoleID.description)"
+		return "\(title) hash \(gameHash), console \(consoleID)"
 	}
 	
 	public static var supportsSecureCoding: Bool {
 		return true
+	}
+	
+	public override var hash: Int {
+		var hasher = Hasher()
+		hasher.combine(identifier)
+		hasher.combine(gameHash)
+		return hasher.finalize()
 	}
 	
 	public func encode(with coder: NSCoder) {

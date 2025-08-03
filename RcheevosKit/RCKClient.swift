@@ -52,7 +52,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// The display text buffer is guaranteed to live for as long as the game is loaded,
 	/// but it may be updated in a non-thread safe manner within `Client.doFrame()`, so
 	/// we create a copy for the rendering code to read.
-	@objc
+	@objc(updateLeaderboardTrackerForClient:usingTracker:)
 	optional func updateLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
 	
 	/// The actual implementation of converting a `LeaderboardTracker` to
@@ -60,40 +60,43 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// has a unique identifier for the tracker and a string to be displayed on-screen.
 	/// The string should be displayed using a fixed-width font to eliminate jittering
 	/// when timers are updated several times a second.
-	@objc
+	@objc(showLeaderboardTrackerForClient:tracker:)
 	optional func showLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
 	
 	/// This tracker is no longer needed
-	@objc
+	@objc(hideLeaderboardTrackerForClient:tracker:)
 	optional func hideLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
 	
 	/// Multiple challenge indicators may be shown, but only one per achievement, so key the list on the achievement ID
-	@objc
-	optional func showChallengeIndicator(client: Client, achievement: Client.Achievement, imageURL: URL?)
+	@objc(showChallengeIndicatorForClient:referencingAchievement:imageURL:)
+	optional func showChallengeIndicator(client: Client, referencing achievement: Client.Achievement, imageURL: URL?)
 	
 	/// The challenge indicator is no longer needed
-	@objc
-	optional func hideChallengeIndicator(client: Client, achievement: Client.Achievement)
+	@objc(hideChallengeIndicatorForClient:referencingAchievement:)
+	optional func hideChallengeIndicator(client: Client, referencing achievement: Client.Achievement)
 
 	/// The *UPDATE* event assumes the indicator is already visible, and just asks us to update the image/text.
-	@objc
-	optional func updateProgressIndicator(client: Client, achievement: Client.Achievement)
+	@objc(updateProgressIndicatorForClient:referencingAchievement:)
+	optional func updateProgressIndicator(client: Client, referencing achievement: Client.Achievement)
 	
 	/// The *SHOW* event tells us the indicator was not visible, but should be now.
-	@objc
-	optional func showProgressIndicator(client: Client, achievement: Client.Achievement)
+	@objc(showProgressIndicatorForClient:referencingAchievement:)
+	optional func showProgressIndicator(client: Client, referencing achievement: Client.Achievement)
 	
 	/// The hide event indicates the indicator should no longer be visible.
-	@objc
+	@objc(hideProgressIndicatorForClient:)
 	optional func hideProgressIndicator(client: Client)
 
 	/// User has completed all achievements!
-	@objc func gameCompleted(client: Client)
+	@objc(gameCompletedWithClient:)
+	func gameCompleted(client: Client)
 	
-	@objc func serverError(client: Client, message: String?, api: String?)
+	@objc(serverErrorFromClient:message:api:)
+	func serverError(client: Client, message: String?, api: String?)
 	
 	/// Possibly-new ranking received for leaderboard.
-	@objc optional func scoreBoard(client: Client, updated: Client.Leaderboard.Scoreboard)
+	@objc(scoreBoardForClient:updated:)
+	optional func scoreBoard(client: Client, updated: Client.Leaderboard.Scoreboard)
 	
 	/// An unlock request could not be completed and is pending.
 	@objc optional func clientDisconnected(_ client: Client)
@@ -106,7 +109,8 @@ public protocol ClientDelegate: NSObjectProtocol {
 	optional func clientCleared(_ client: Client, event subset: Client.Subset)
 
 	/// Callback for logging or displaying a message.
-	@objc optional func client(_ client: Client, receivedMessage: String)
+	@objc(client:receivedMessage:)
+	optional func client(_ client: Client, receivedMessage: String)
 }
 
 private let _initErrors: () = {
@@ -589,24 +593,24 @@ final public class Client: NSObject {
 			imageURL = URL(string: urlString)
 		}
 		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .unlocked)
-		delegate?.showChallengeIndicator?(client: self, achievement: achieve, imageURL: imageURL)
+		delegate?.showChallengeIndicator?(client: self, referencing: achieve, imageURL: imageURL)
 	}
 	
 	private func hideChallengeIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .active)
-		delegate?.hideChallengeIndicator?(client: self, achievement: achieve)
+		delegate?.hideChallengeIndicator?(client: self, referencing: achieve)
 	}
 	
 	// The UPDATE event assumes the indicator is already visible, and just asks us to update the image/text.
 	private func updateProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .active)
-		delegate?.updateProgressIndicator?(client: self, achievement: achieve)
+		delegate?.updateProgressIndicator?(client: self, referencing: achieve)
 	}
 	
 	// The SHOW event tells us the indicator was not visible, but should be now.
 	private func showProgressIndicator(achievement: UnsafePointer<rc_client_achievement_t>!) {
 		let achieve = Client.Achievement(retroPointer: achievement, stateIcon: .active)
-		delegate?.showProgressIndicator?(client: self, achievement: achieve)
+		delegate?.showProgressIndicator?(client: self, referencing: achieve)
 	}
 	
 	// MARK: - User Account stuff
@@ -869,7 +873,7 @@ extension RCKError.Code: CustomStringConvertible {
 extension RCKConsoleIdentifier: CustomStringConvertible, CustomDebugStringConvertible, Codable {
 	
 	public var debugDescription: String {
-		return "\(self.description) (\(self.rawValue))"
+		return "\(self) (\(self.rawValue))"
 	}
 }
 
