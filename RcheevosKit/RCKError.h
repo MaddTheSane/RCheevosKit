@@ -60,7 +60,11 @@ typedef RCK_ERROR_ENUM(int, RCKErrorDomain, RCKError) {
 	RCKErrorNoResponse = -32,
 	RCKErrorAccessDenied = -33,
 	RCKErrorInvalidCredentials = -34,
-	RCKErrorExpiredToken = -35
+	RCKErrorExpiredToken = -35,
+	RCKErrorInsufficientBuffer = -36,
+	RCKErrorInvalidVariableName = -37,
+	RCKErrorUnknownVariableName = -38,
+	RCKErrorNotFound = -39
 };
 
 static const RCKError RCKErrorMissingSubmig API_DEPRECATED_WITH_REPLACEMENT("RCKErrorMissingSubmit", macos(10.13, 11.0), ios(10.13, 11.0), tvos(10.13, 11.0)) = RCKErrorMissingSubmit;
