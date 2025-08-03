@@ -121,6 +121,16 @@ public extension Client {
 			category = Client.Achievement.Category(rawValue: retroPointer.pointee.category)
 			bucket = Client.Achievement.BucketType(rawValue: retroPointer.pointee.bucket)!
 			unlocked = Client.Achievement.Unlocked(rawValue: retroPointer.pointee.unlocked)
+			if let preBadgeURL = retroPointer.pointee.badge_url {
+				badgeURL = URL(string: String(cString: preBadgeURL))
+			} else {
+				badgeURL = nil
+			}
+			if let preBadgeURL = retroPointer.pointee.badge_locked_url {
+				badgeLockedURL = URL(string: String(cString: preBadgeURL))
+			} else {
+				badgeLockedURL = nil
+			}
 			super.init()
 		}
 		
@@ -139,6 +149,8 @@ public extension Client {
 		public let unlocked: Unlocked
 		
 		public let currentIconURL: URL?
+		public let badgeURL: URL?
+		public let badgeLockedURL: URL?
 		
 #if os(OSX)
 	private(set) public lazy var currentIcon: NSImage? = {
@@ -167,6 +179,8 @@ public extension Client {
 			coder.encode(Int32(unlocked.rawValue), forKey: Achievement.CodingKeys.unlocked.stringValue)
 			
 			coder.encodeConditionalObject(currentIconURL as NSURL?, forKey: Achievement.CodingKeys.currentIconURL.stringValue)
+			coder.encodeConditionalObject(badgeURL as NSURL?, forKey: Achievement.CodingKeys.badgeURL.stringValue)
+			coder.encodeConditionalObject(badgeLockedURL as NSURL?, forKey: Achievement.CodingKeys.badgeLockedURL.stringValue)
 		}
 		
 		public required init?(coder: NSCoder) {
@@ -240,6 +254,8 @@ public extension Client {
 			
 			currentIconURL = coder.decodeObject(of: NSURL.self, forKey: Achievement.CodingKeys.currentIconURL.stringValue) as URL?
 			
+			badgeURL = coder.decodeObject(of: NSURL.self, forKey: Achievement.CodingKeys.badgeURL.stringValue) as URL?
+			badgeLockedURL = coder.decodeObject(of: NSURL.self, forKey: Achievement.CodingKeys.badgeLockedURL.stringValue) as URL?
 			super.init()
 		}
 		

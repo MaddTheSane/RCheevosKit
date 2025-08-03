@@ -450,7 +450,7 @@ final public class Client: NSObject {
 						return
 					}
 					
-					cCall.callback.resume(returning: ())
+					cCall.callback.resume()
 				}, aCall)
 			}
 		}
@@ -458,7 +458,9 @@ final public class Client: NSObject {
 	
 	@objc(gameLoaded)
 	public var isGameLoaded: Bool {
-		return rc_client_is_game_loaded(_client) != 0
+		@objc(isGameLoaded) get {
+			return rc_client_is_game_loaded(_client) != 0
+		}
 	}
 	
 	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) throws {
@@ -892,6 +894,8 @@ public extension Client {
 		/// The current icon URL of the user. May be `nil` if there was a problem parsing the URL.
 		public let iconURL: URL?
 
+		public let avatarURL: URL?
+		
 		@nonobjc
 		fileprivate init(user hi: UnsafePointer<rc_client_user_t>) {
 			displayName = String(cString: hi.pointee.display_name)
@@ -909,6 +913,12 @@ public extension Client {
 					trueURL = URL(string: str)
 				}
 				iconURL = trueURL
+			}
+			
+			if let preAvatar = hi.pointee.avatar_url {
+				avatarURL = URL(string: String(cString: preAvatar))
+			} else {
+				avatarURL = nil
 			}
 		}
 		
