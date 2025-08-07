@@ -115,6 +115,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 							
 							self.gameNameView.stringValue = "No Game"
 							let alert = NSAlert(error: error)
+							alert.alertStyle = .critical
 							alert.runModal()
 						}
 					}
