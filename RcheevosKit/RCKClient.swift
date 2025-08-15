@@ -416,7 +416,7 @@ final public class Client: NSObject {
 			let aCall = Unmanaged.passRetained(cb).toOpaque()
 			
 			_ = url.withUnsafeFileSystemRepresentation { up in
-				return rc_client_begin_identify_and_load_game(_client, console.rawValue, up, nil, 0, { result, errorMessage, _, bCall in
+				rc_client_begin_identify_and_load_game(_client, console.rawValue, up, nil, 0, { result, errorMessage, _, bCall in
 					let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 					guard result == RC_OK else {
 						var dict = [String: Any]()
@@ -424,11 +424,11 @@ final public class Client: NSObject {
 							let tmpStr = String(cString: errorMessage)
 							dict[NSLocalizedFailureReasonErrorKey] = tmpStr
 						}
-						cCall.callback.resume(throwing: RCKError(.apiFailure, userInfo: dict))
+						cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result) ?? .apiFailure, userInfo: dict))
 						return
 					}
 					
-					cCall.callback.resume(returning: ())
+					cCall.callback.resume()
 				}, aCall)
 			}
 		}
@@ -450,7 +450,7 @@ final public class Client: NSObject {
 							let tmpStr = String(cString: errorMessage)
 							dict[NSLocalizedFailureReasonErrorKey] = tmpStr
 						}
-						cCall.callback.resume(throwing: RCKError(.apiFailure, userInfo: dict))
+						cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result) ?? .apiFailure, userInfo: dict))
 						return
 					}
 					
@@ -481,8 +481,9 @@ final public class Client: NSObject {
 		} else {
 			let errMsg = errorMessage ?? rc_error_str(result)!
 			let errStr = String(cString: errMsg)
-			err = RCKError(RCKError.Code(rawValue: result)!, userInfo: [NSLocalizedDescriptionKey: errStr,
-																	   NSDebugDescriptionErrorKey: errStr])
+			err = RCKError(RCKError.Code(rawValue: result)!,
+						   userInfo: [NSLocalizedDescriptionKey: errStr,
+									 NSDebugDescriptionErrorKey: errStr])
 		}
 		throw err
 	}
@@ -636,7 +637,7 @@ final public class Client: NSObject {
 			rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, _, bCall in
 				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
 				if result == RC_OK {
-					cCall.callback.resume(returning: ())
+					cCall.callback.resume()
 				} else {
 					var userInfo = [String: Any]()
 					if let errorMessage {
@@ -788,6 +789,7 @@ final public class Client: NSObject {
 	/// Get information about the current game.
 	///
 	/// Returns `nil` if no game is loaded.
+	/// - NOTE: returns a dummy game record if an unidentified game is loaded.
 	public func gameInfo() -> GameInfo? {
 		guard let gi = rc_client_get_game_info(_client) else {
 			return nil

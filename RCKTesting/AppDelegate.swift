@@ -91,34 +91,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 	}
 
 	@IBAction func selectGame(_ sender: AnyObject?) {
-		let openPanel = NSOpenPanel()
-		
-		openPanel.beginSheetModal(for: self.window) { response in
+		Task {
+			let openPanel = NSOpenPanel()
+			
+			let response = await openPanel.begin()
 			if response == .OK {
-				Task {
-					do {
-						try await self.client.loadGame(from: openPanel.url!)
-						DispatchQueue.main.async {
-							self.loginStatus.image = NSImage(named: NSImage.statusAvailableName)
-							self.achievements = self.client.achievementsList() ?? []
-							self.achievementsView.reloadData()
-							
-							self.gameNameView.stringValue = self.client.gameInfo()?.title ?? "Unknown Game"
-						}
-						
-					} catch {
-						DispatchQueue.main.async {
-							NSSound.beep()
-							self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
-							self.achievements.removeAll()
-							self.achievementsView.reloadData()
-							
-							self.gameNameView.stringValue = "No Game"
-							let alert = NSAlert(error: error)
-							alert.alertStyle = .critical
-							alert.runModal()
-						}
+				do {
+					try await self.client.loadGame(from: openPanel.url!)
+					self.loginStatus.image = NSImage(named: NSImage.statusAvailableName)
+					self.achievements = self.client.achievementsList() ?? []
+					self.achievementsView.reloadData()
+					
+					self.gameNameView.stringValue = self.client.gameInfo()?.title ?? "Unknown Game"
+					
+				} catch {
+					NSSound.beep()
+					if self.client.isLoggedIn {
+						self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
 					}
+					self.achievements.removeAll()
+					self.achievementsView.reloadData()
+					
+					self.gameNameView.stringValue = "No Game"
+					let alert = NSAlert(error: error)
+					alert.alertStyle = .critical
+					alert.runModal()
 				}
 			}
 		}
