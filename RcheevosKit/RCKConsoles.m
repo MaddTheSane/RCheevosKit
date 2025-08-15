@@ -63,6 +63,11 @@ NSString * RCKConsoleGetName(RCKConsoleIdentifier ident)
 	return [memoryDescription copy];
 }
 
+- (NSString*)description
+{
+	return [NSString stringWithFormat:@"%@, memory type: %hhu", [self memoryDescription], val->region[index].type];
+}
+
 + (NSArray<RCKMemoryRegion *> *)regionsBasedOnConsole:(RCKConsoleIdentifier)ident
 {
 	const rc_memory_regions_t* d = rc_console_memory_regions(ident);

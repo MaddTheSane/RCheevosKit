@@ -16,6 +16,7 @@
 		552BA1C52AA470B5007449CC /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 552BA1C32AA470B5007449CC /* MainMenu.xib */; };
 		552BA1CA2AA470C0007449CC /* RcheevosKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55A292CB2A9EE47E007806A5 /* RcheevosKit.framework */; };
 		552BA1CB2AA470C0007449CC /* RcheevosKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55A292CB2A9EE47E007806A5 /* RcheevosKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		55695EDC2E4F099B00C5087C /* RcheevosKit.docc in Sources */ = {isa = PBXBuildFile; fileRef = 55695EDB2E4F099B00C5087C /* RcheevosKit.docc */; };
 		558E46312E3042E400CE6F50 /* RCKClientSubset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558E46302E3042DE00CE6F50 /* RCKClientSubset.swift */; };
 		559CDB552AA079440097A937 /* rcheevos in Frameworks */ = {isa = PBXBuildFile; productRef = 559CDB542AA079440097A937 /* rcheevos */; };
 		559CDB572AA131AF0097A937 /* RCKClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559CDB562AA131AF0097A937 /* RCKClient.swift */; };
@@ -61,6 +62,7 @@
 		552BA1C12AA470B5007449CC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		552BA1C42AA470B5007449CC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		552BA1C62AA470B5007449CC /* RCKTesting.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RCKTesting.entitlements; sourceTree = "<group>"; };
+		55695EDB2E4F099B00C5087C /* RcheevosKit.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = RcheevosKit.docc; sourceTree = "<group>"; };
 		558E46302E3042DE00CE6F50 /* RCKClientSubset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RCKClientSubset.swift; sourceTree = "<group>"; };
 		559CDB512AA078240097A937 /* rcheevos */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = rcheevos; sourceTree = "<group>"; };
 		559CDB562AA131AF0097A937 /* RCKClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RCKClient.swift; sourceTree = "<group>"; };
@@ -148,6 +150,7 @@
 				552BA1B32AA448F6007449CC /* RCKError.h */,
 				552BA1B42AA448F6007449CC /* RCKError.m */,
 				552BA1B72AA45B54007449CC /* RCKGameInfo.swift */,
+				55695EDB2E4F099B00C5087C /* RcheevosKit.docc */,
 			);
 			path = RcheevosKit;
 			sourceTree = "<group>";
@@ -292,6 +295,7 @@
 				55A294782A9EE8CA007806A5 /* RCKConsoles.m in Sources */,
 				552BA1B62AA448F6007449CC /* RCKError.m in Sources */,
 				552BA1B22AA42F3A007449CC /* RCKClientAchievementBucket.swift in Sources */,
+				55695EDC2E4F099B00C5087C /* RcheevosKit.docc in Sources */,
 				559CDB572AA131AF0097A937 /* RCKClient.swift in Sources */,
 				558E46312E3042E400CE6F50 /* RCKClientSubset.swift in Sources */,
 				55B7AE832AC815E6005ABCC6 /* RCKClientAchievement.swift in Sources */,

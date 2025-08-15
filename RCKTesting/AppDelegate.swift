@@ -74,18 +74,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 		Task {
 			do {
 				try await client.loginWith(userName: name, password: pass)
-				DispatchQueue.main.async {
-					self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
-				}
+				self.loginStatus.image = NSImage(named: NSImage.statusPartiallyAvailableName)
 			} catch {
-				DispatchQueue.main.async {
-					NSSound.beep()
-					self.loginStatus.image = NSImage(named: NSImage.statusUnavailableName)
-
-					let alert = NSAlert(error: error)
-					alert.alertStyle = .critical
-					alert.runModal()
-				}
+				NSSound.beep()
+				self.loginStatus.image = NSImage(named: NSImage.statusUnavailableName)
+				
+				let alert = NSAlert(error: error)
+				alert.alertStyle = .critical
+				alert.runModal()
 			}
 		}
 	}

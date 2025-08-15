@@ -401,6 +401,11 @@ final public class Client: NSObject {
 	// MARK: -
 	
 	/// Begin loading a game from the selected file URL.
+	///
+	/// - parameter url: The file URL to load from to load into RetroAchievements.
+	/// - parameter console: The console to load the file from. Use ``RCKConsoleIdentifier/unknown`` if the console is unknown.
+	/// - Parameter completionHandler: The completion handler.
+	/// - note: The URL must be a file URL. if it is not, this function throws ``RCKError-enum/RCKErrorAPIFailure``.
 	@objc(loadGameFromURL:console:completionHandler:)
 	public func loadGame(from url: URL, console: RCKConsoleIdentifier = .unknown) async throws {
 		guard url.isFileURL else {
@@ -423,6 +428,7 @@ final public class Client: NSObject {
 						if let errorMessage {
 							let tmpStr = String(cString: errorMessage)
 							dict[NSLocalizedFailureReasonErrorKey] = tmpStr
+							dict[NSLocalizedDescriptionKey] = tmpStr
 						}
 						cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result) ?? .apiFailure, userInfo: dict))
 						return
@@ -435,6 +441,10 @@ final public class Client: NSObject {
 	}
 	
 	/// Begin loading a game from the passed-in data.
+	///
+	/// - Parameter from: The data contents to load into RetroAchievements.
+	/// - Parameter console: The console to load the data from. Use ``RCKConsoleIdentifier/unknown`` if the console is unknown.
+	/// - Parameter completionHandler: The completion handler.
 	@objc(loadGameFromData:console:completionHandler:)
 	public func loadGame(from: Data, console: RCKConsoleIdentifier = .unknown) async throws {
 		try await withCheckedThrowingContinuation { cont in
@@ -460,6 +470,7 @@ final public class Client: NSObject {
 		}
 	}
 	
+	/// Determines if a game was successfully identified and loaded.
 	@objc(gameLoaded)
 	public var isGameLoaded: Bool {
 		@objc(isGameLoaded) get {
@@ -488,6 +499,7 @@ final public class Client: NSObject {
 		throw err
 	}
 	
+	/// Changes the active disc in a multi-disc game.
 	@objc(changeMediaToURL:completionHandler:)
 	public func changeMedia(to url: URL) async throws {
 		guard url.isFileURL else {
@@ -520,6 +532,7 @@ final public class Client: NSObject {
 		}
 	}
 	
+	/// Changes the active disc in a multi-disc game.
 	@objc(changeMediaToData:completionHandler:)
 	public func changeMedia(to data: Data) async throws {
 		try await withCheckedThrowingContinuation { cont in
@@ -643,6 +656,7 @@ final public class Client: NSObject {
 					if let errorMessage {
 						let tmpStr = String(cString: errorMessage)
 						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
+						userInfo[NSLocalizedDescriptionKey] = tmpStr
 					}
 					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
 				}
@@ -650,7 +664,7 @@ final public class Client: NSObject {
 		}
 	}
 	
-	/// Login with a user name and a password.
+	/// Login with a user name and a token.
 	///
 	/// - throws: If login failed.
 	public func loginWith(userName: String, token: String) async throws {
@@ -669,6 +683,7 @@ final public class Client: NSObject {
 					if let errorMessage {
 						let tmpStr = String(cString: errorMessage)
 						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
+						userInfo[NSLocalizedDescriptionKey] = tmpStr
 					}
 					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
 				}
