@@ -138,6 +138,9 @@ final public class Client: NSObject {
 	private var _client: OpaquePointer?
 	private var session: URLSession!
 	/// The delegate for the client to call.
+	///
+	/// This should be set before ``Client/loadGame(from:console:)-6fzag`` or
+	/// ``Client/loadGame(from:console:)-6gm0s`` is called.
 	public weak var delegate: ClientDelegate?
 	
 	public override init() {
@@ -370,6 +373,15 @@ final public class Client: NSObject {
 		rc_client_reset(_client)
 	}
 	
+	/// Determines if a sufficient amount of frames have been processed since the last call to `clientCanPause(remainingFrames:)`.
+	/// Should not be called unless the client is trying to pause.
+	///
+	/// If `false` is returned, and `remainingFrames` is not `nil`, `remainingFrames` will be set to the number of frames
+	/// still required before pause is allowed, which can be converted to a time in seconds for displaying to the user.
+	public func clientCanPause(remainingFrames: UnsafeMutablePointer<UInt32>? = nil) -> Bool {
+		return rc_client_can_pause(_client, remainingFrames) != 0
+	}
+	
 	@objc(subsetInfoForID:)
 	public func subsetInfo(_ id: UInt32) -> Subset? {
 		guard let aSub = rc_client_get_subset_info(_client, id) else {
@@ -392,10 +404,27 @@ final public class Client: NSObject {
 	
 	/// Processes the periodic queue.
 	///
-	/// Called internally by `rc_client_do_frame`. Should be explicitly called if `doFrame()`
+	/// Should be explicitly called if ``doFrame()``
 	/// is not being called because emulation is paused.
 	public func idling() {
 		rc_client_idle(_client)
+	}
+	
+	// MARK: - Rich Presence
+	
+	/// Returns `true` if the current game supports rich presence.
+	public var hasRichPresence: Bool {
+		return rc_client_has_rich_presence(_client) != 0
+	}
+	
+	/// Returns the current rich presence message.
+	public var richPresenceMessage: String? {
+		var buffer: [CChar] = Array(repeating: 0, count: 1024)
+		let written = rc_client_get_rich_presence_message(_client, &buffer, buffer.count)
+		guard written > 0 else {
+			return nil
+		}
+		return String(cString: buffer)
 	}
 	
 	// MARK: -
@@ -476,6 +505,60 @@ final public class Client: NSObject {
 		@objc(isGameLoaded) get {
 			return rc_client_is_game_loaded(_client) != 0
 		}
+	}
+	
+	/// Unloads the current game.
+	public func unloadGame() {
+		rc_client_unload_game(_client)
+	}
+	
+	@objc(RCKLoadingGameState)
+	public enum LoadingGameState: CInt {
+		case none = 0
+		case awaitingLogin
+		case identifyingGame
+		/// Deprecated, game data is now returned by identify call
+		case fetchingGameData
+		case startingSession
+		case done
+		/// There is currently no method to cancel/abort any process in this wrapper.
+		case aborted
+	}
+	
+	/// Gets the current progress of the asynchronous load game process.
+	public func getLoadingGameState() -> LoadingGameState {
+		return LoadingGameState(rawValue: rc_client_get_load_game_state(_client)) ?? .none
+	}
+	
+	@objc(RCKUserGameSummary)
+	public class UserGameSummary: NSObject {
+		public let countOfCoreAchievements: UInt32
+		public let countOfUnofficialAchievements: UInt32
+		public let countOfUnlockedAchievements: UInt32
+		public let countOfUnsupportedAchievements: UInt32
+		
+		public let corePoints: UInt32
+		public let unlockedPoints: UInt32
+		
+		init(gameSummary: rc_client_user_game_summary_t) {
+			countOfCoreAchievements = gameSummary.num_core_achievements
+			countOfUnofficialAchievements = gameSummary.num_unofficial_achievements
+			countOfUnlockedAchievements = gameSummary.num_unlocked_achievements
+			countOfUnsupportedAchievements = gameSummary.num_unsupported_achievements
+			
+			corePoints = gameSummary.points_core
+			unlockedPoints = gameSummary.points_unlocked
+			super.init()
+		}
+	}
+	
+	/// Returns a breakdown of the number of achievements in the game, and how many the user has unlocked.
+	///
+	/// Used for the "You have unlocked X of Y achievements" message shown when the game starts.
+	public func userGameSummary() -> UserGameSummary {
+		var hi = rc_client_user_game_summary_t()
+		rc_client_get_user_game_summary(_client, &hi)
+		return UserGameSummary(gameSummary: hi)
 	}
 	
 	private func mediaChangedCallback(result: CInt, errorMessage: UnsafePointer<CChar>?) throws {
@@ -730,9 +813,9 @@ final public class Client: NSObject {
 
 	/// Gets/sets whether hardcore is enabled (off by default).
 	///
-	/// Can be called with a game loaded.
-	/// Enabling hardcore with a game loaded will call `Delegate.restartEmulationRequested(client: Client)`
-	/// event. Processing will be disabled until `Client.reset()` is called.
+	/// Can be called with a game is loaded.
+	/// Enabling hardcore with a game is loaded will call ``ClientDelegate/restartEmulationRequested(client:)``
+	/// event. Processing will be disabled until ``Client/reset()`` is called.
 	public var hardcoreMode: Bool {
 		get {
 			return (rc_client_get_hardcore_enabled(_client) != 0)
@@ -787,6 +870,24 @@ final public class Client: NSObject {
 	}
 	
 	// MARK: -
+	
+	/// Get information about a leaderboard. Returns `nil` if not found.
+	@objc(leaderboardInfoForIdentifier:)
+	public func leaderboardInfo(for identifier: UInt32) -> Leaderboard? {
+		guard let leaderboard = rc_client_get_leaderboard_info(_client, identifier) else {
+			return nil
+		}
+		return Leaderboard(leaderboard: leaderboard)
+	}
+	
+	/// Get information about an achievement. Returns `nil` if not found.
+	@objc(achievementInfoforIdentifier:)
+	public func achievementInfo(for id: UInt32) -> Client.Achievement? {
+		guard let achievement = rc_client_get_achievement_info(_client, id) else {
+			return nil
+		}
+		return Client.Achievement(retroPointer: achievement, stateIcon: Achievement.State(rawValue: achievement.pointee.state) ?? .disabled)
+	}
 	
 	/// Returns the achievement list of the current game.
 	public func achievementsList(category: Client.Achievement.Category = .coreAndUnofficial, grouping: Client.Achievement.ListGrouping = .progress) -> [Client.Achievement.Bucket]? {
@@ -845,14 +946,14 @@ final public class Client: NSObject {
 		public let gameID: UInt32
 		public let countOfAchievements: UInt32
 		public let countOfUnlockedAchievements: UInt32
-		public let countOfUnlockedAchievementsHardcore: UInt32
+		public let countOfUnlockedHardcoreAchievements: UInt32
 		
 		@nonobjc
 		internal init(raInternal: rc_client_all_user_progress_entry_t) {
 			self.gameID = raInternal.game_id
 			self.countOfAchievements = raInternal.num_achievements
 			self.countOfUnlockedAchievements = raInternal.num_unlocked_achievements
-			self.countOfUnlockedAchievementsHardcore = raInternal.num_unlocked_achievements_hardcore
+			self.countOfUnlockedHardcoreAchievements = raInternal.num_unlocked_achievements_hardcore
 			super.init()
 		}
 	}
@@ -868,7 +969,8 @@ final public class Client: NSObject {
 		case verbose
 	}
 	
-	/// Sets the logging level. The delegate must implement `client(_:receivedMessage:)` in order to receive messages.
+	/// Sets the logging level. The delegate must implement ``ClientDelegate/client(_:receivedMessage:)``
+	/// in order to receive messages.
 	public func enableLogging(level: LogLevel) {
 		rc_client_enable_logging(_client, level.rawValue) { message, client in
 			guard let usrDat = rc_client_get_userdata(client) else {

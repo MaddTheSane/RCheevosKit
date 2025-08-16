@@ -37,6 +37,12 @@ Provides a wrapper around `rc_client_t`.
 - ``Client/changeMedia(to:)-1bzw0``
 - ``Client/changeMedia(to:)-5l03g``
 - ``Client/isGameLoaded``
+- ``Client/unloadGame()``
+- ``Client/LoadingGameState``
+- ``Client/getLoadingGameState()``
+- ``Client/UserGameSummary``
+- ``Client/userGameSummary()``
+- ``Client/clientCanPause(remainingFrames:)``
 
 ### State Saving
 - ``Client/captureRetroAchievementsState()``
@@ -52,3 +58,7 @@ Provides a wrapper around `rc_client_t`.
 - ``Client/UserProgressEntry``
 - ``Client/allUserProgress(for:)``
 - ``Client/subsetInfo(_:)``
+
+### Rich Presence
+- ``Client/hasRichPresence``
+- ``Client/richPresenceMessage``
