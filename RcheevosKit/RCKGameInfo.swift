@@ -60,6 +60,20 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 		return hasher.finalize()
 	}
 	
+	public static func == (lhs: GameInfo, rhs: GameInfo) -> Bool {
+		return lhs.identifier == rhs.identifier &&
+		lhs.consoleID == rhs.consoleID &&
+		lhs.title == rhs.title &&
+		lhs.gameHash == rhs.gameHash
+	}
+	
+	public override func isEqual(_ object: Any?) -> Bool {
+		guard let object1 = object as? GameInfo else {
+			return false
+		}
+		return self == object1
+	}
+	
 	public func encode(with coder: NSCoder) {
 		coder.encode(Int32(bitPattern: identifier), forKey: GameInfo.CodingKeys.identifier.stringValue)
 		coder.encode(Int32(bitPattern: consoleID.rawValue), forKey: GameInfo.CodingKeys.consoleID.stringValue)

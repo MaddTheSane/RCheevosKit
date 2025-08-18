@@ -31,7 +31,7 @@ public protocol ClientDelegate: NSObjectProtocol {
 	/// Called when the runtime wants the emulator reset.
 	///
 	/// Usually called when the user wants to enable hardcore mode when a game is running.
-	/// Make sure you call `Client.reset()` after the emulator has reset itself.
+	/// Make sure you call ``Client/reset()`` after the emulator has reset itself.
 	@objc(restartEmulationRequestedByClient:)
 	func restartEmulationRequested(client: Client)
 	
@@ -49,14 +49,17 @@ public protocol ClientDelegate: NSObjectProtocol {
 	optional func leaderboardSubmitted(client: Client, _ leaderboard: Client.Leaderboard)
 	
 	/// Find the currently visible tracker by ID and update what's being displayed.
+	///
 	/// The display text buffer is guaranteed to live for as long as the game is loaded,
-	/// but it may be updated in a non-thread safe manner within `Client.doFrame()`, so
+	/// but it may be updated in a non-thread safe manner within ``Client/doFrame()``, so
 	/// we create a copy for the rendering code to read.
 	@objc(updateLeaderboardTrackerForClient:usingTracker:)
 	optional func updateLeaderboardTracker(client: Client, tracker: Client.LeaderboardTracker)
 	
-	/// The actual implementation of converting a `LeaderboardTracker` to
-	/// an on-screen widget is going to be client-specific. The provided tracker object
+	/// The actual implementation of converting a ``LeaderboardTracker`` to
+	/// an on-screen widget is going to be client-specific.
+	///
+	/// The provided tracker object
 	/// has a unique identifier for the tracker and a string to be displayed on-screen.
 	/// The string should be displayed using a fixed-width font to eliminate jittering
 	/// when timers are updated several times a second.
@@ -201,27 +204,7 @@ final public class Client: NSObject {
 		}
 		task.resume()
 	}
-
-	/// This is the function the `rc_client` will use to read memory for the emulator.
-	private static func read_memory(_ address: UInt32, buffer: UnsafeMutablePointer<UInt8>?, num_bytes: UInt32, client: OpaquePointer?) -> UInt32 {
-		guard let usrDat = rc_client_get_userdata(client) else {
-			return 0
-		}
-
-		let theClass: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-		if let classDel = theClass.delegate {
-			let dat = classDel.readMemory(client: theClass, at: address, count: num_bytes)
-			if dat.count > 0 {
-				dat.withUnsafeBytes { urbp in
-					_=memcpy(buffer, urbp.baseAddress, min(urbp.count, Int(num_bytes)))
-				}
-			}
-			return min(UInt32(dat.count), num_bytes)
-		}
-
-		return 0
-	}
-
+	
 	private func leaderboardStarted(_ leaderboard: UnsafePointer<rc_client_leaderboard_t>?) {
 		delegate?.leaderboardStarted?(client: self, Leaderboard(leaderboard: leaderboard))
 	}
@@ -254,7 +237,22 @@ final public class Client: NSObject {
 		}
 		
 		_client = rc_client_create({ address, buffer, num_bytes, client in
-			return Client.read_memory(address, buffer: buffer, num_bytes: num_bytes, client: client)
+			guard let usrDat = rc_client_get_userdata(client) else {
+				return 0
+			}
+
+			let theClass: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
+			if let classDel = theClass.delegate {
+				let dat = classDel.readMemory(client: theClass, at: address, count: num_bytes)
+				if dat.count > 0 {
+					dat.withUnsafeBytes { urbp in
+						_=memcpy(buffer, urbp.baseAddress, min(urbp.count, Int(num_bytes)))
+					}
+				}
+				return UInt32(min(dat.count, Int(num_bytes)))
+			}
+
+			return 0
 		}, { request, callback, callbackData, client in
 			guard let usrDat = rc_client_get_userdata(client) else {
 				return
@@ -373,7 +371,7 @@ final public class Client: NSObject {
 		rc_client_reset(_client)
 	}
 	
-	/// Determines if a sufficient amount of frames have been processed since the last call to `clientCanPause(remainingFrames:)`.
+	/// Determines if a sufficient amount of frames have been processed since the last call to ``clientCanPause(remainingFrames:)``.
 	/// Should not be called unless the client is trying to pause.
 	///
 	/// If `false` is returned, and `remainingFrames` is not `nil`, `remainingFrames` will be set to the number of frames
@@ -513,7 +511,7 @@ final public class Client: NSObject {
 	}
 	
 	@objc(RCKLoadingGameState)
-	public enum LoadingGameState: CInt {
+	public enum LoadingGameState: CInt, Sendable, Encodable {
 		case none = 0
 		case awaitingLogin
 		case identifyingGame
@@ -531,7 +529,7 @@ final public class Client: NSObject {
 	}
 	
 	@objc(RCKUserGameSummary)
-	public class UserGameSummary: NSObject {
+	final public class UserGameSummary: NSObject, Sendable, Encodable {
 		public let countOfCoreAchievements: UInt32
 		public let countOfUnofficialAchievements: UInt32
 		public let countOfUnlockedAchievements: UInt32
@@ -722,6 +720,8 @@ final public class Client: NSObject {
 	
 	/// Login with a user name and a password.
 	///
+	/// - parameter userName: The user name to log in with.
+	/// - parameter password: The password to log in with.
 	/// - throws: If login failed.
 	public func loginWith(userName: String, password: String) async throws {
 		// This will generate an HTTP payload and call the server_call chain above.
@@ -749,7 +749,10 @@ final public class Client: NSObject {
 	
 	/// Login with a user name and a token.
 	///
-	/// - throws: If login failed.
+	/// - parameter userName: The user name to log in with.
+	/// - parameter token: A login token generated when logged in before, generated by getting the ``loginToken``.
+	/// The user name must match what was used to generate the login token beforehand.
+	/// - throws: If login failed. A common cause is that the login token expired.
 	public func loginWith(userName: String, token: String) async throws {
 		// This will generate an HTTP payload and call the server_call chain above.
 		// Eventually, login_callback will be called to let us know if the login was successful.
@@ -922,12 +925,13 @@ final public class Client: NSObject {
 			let anObj = RCKProgressCallback(callback: continuation)
 			let aCall = Unmanaged.passRetained(anObj).toOpaque()
 			
-			rc_client_begin_fetch_all_user_progress(_client, UInt32(console.rawValue), { result, errorMessage, list, client, ch in
+			rc_client_begin_fetch_all_user_progress(_client, console.rawValue, { result, errorMessage, list, client, ch in
 				let callback2: RCKProgressCallback<[Client.UserProgressEntry]> = Unmanaged.fromOpaque(ch!).takeRetainedValue()
 				guard result == R_OK else {
 					var errorUserInfo: [String: Any] = [:]
 					if let errorMessage {
 						errorUserInfo[NSLocalizedFailureReasonErrorKey] = String(cString: errorMessage)
+						errorUserInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
 					}
 					callback2.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo))
 					return
@@ -961,7 +965,7 @@ final public class Client: NSObject {
 	// MARK: - Logging
 
 	@objc(RCKClientLogLevel)
-	public enum LogLevel: CInt, @unchecked Sendable, Codable {
+	public enum LogLevel: CInt, Sendable, Codable {
 		case none = 0
 		case `error`
 		case warning
@@ -973,11 +977,11 @@ final public class Client: NSObject {
 	/// in order to receive messages.
 	public func enableLogging(level: LogLevel) {
 		rc_client_enable_logging(_client, level.rawValue) { message, client in
-			guard let usrDat = rc_client_get_userdata(client) else {
+			guard let usrDat = rc_client_get_userdata(client), let message else {
 				return
 			}
 			let aSelf: Client = Unmanaged.fromOpaque(usrDat).takeUnretainedValue()
-			aSelf.delegate?.client?(aSelf, receivedMessage: String(cString: message!))
+			aSelf.delegate?.client?(aSelf, receivedMessage: String(cString: message))
 		}
 	}	
 }
@@ -1070,6 +1074,17 @@ public extension Client {
 			return aHash.finalize()
 		}
 		
+		public override func isEqual(_ object: Any?) -> Bool {
+			guard let object1 = object as? LeaderboardTracker else {
+				return false
+			}
+			return self == object1
+		}
+		
+		public static func == (lhs: LeaderboardTracker, rhs: LeaderboardTracker) -> Bool {
+			return lhs.identifier == rhs.identifier
+		}
+		
 		public override var description: String {
 			return "ID ‘\(identifier)’, \(display)"
 		}
@@ -1092,30 +1107,6 @@ internal extension UnsafeBufferPointer {
 		var toIterate = start
 		
 		while !(try sentinelChecker(toIterate.pointee)) {
-			toIterate = toIterate.advanced(by: 1)
-		}
-		
-		self = UnsafeBufferPointer(start: start, count: start.distance(to: toIterate))
-	}
-	
-	/// Creates an `UnsafeBufferPointer` over the contiguous `Element` instances
-	/// beginning at `start`, iterating until `sentinelChecker` returns `true` or `maximum`
-	/// iterations have happened.
-	///
-	/// This is great for array pointers that have an unknown number of elements but does have
-	/// a terminating element, or *sentinel*, that indicates the end of the array.
-	/// The sentinal isn't included in the buffer.
-	/// - parameter start: the pointer to start from.
-	/// - parameter maximum: The longest iteration to look out for. Any elements after this
-	/// are not included in the buffer.
-	/// - parameter sentinelChecker: The block that checks if the current `Element`
-	/// is the sentinel, or last object in an array. Return `true` if `toCheck`
-	/// matches the characteristic of the sentinal.
-	/// - parameter toCheck: The current element to check.
-	@inlinable init<E>(start: UnsafePointer<Element>, maximum: Int, sentinel sentinelChecker: (_ toCheck: Element) throws(E) -> Bool) throws(E) {
-		var toIterate = start
-		
-		while !(try sentinelChecker(toIterate.pointee)) && start.distance(to: toIterate) > maximum {
 			toIterate = toIterate.advanced(by: 1)
 		}
 		
