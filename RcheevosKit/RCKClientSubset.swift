@@ -6,14 +6,11 @@
 //
 
 import Foundation
-#if os(OSX)
-import Cocoa
-#endif
 @_implementationOnly import rcheevos.rc_client
 
 public extension Client {
 	@objc(RCKClientSubset) @objcMembers
-	final class Subset: NSObject, Codable {
+	final class Subset: NSObject, Sendable, Codable {
 		@nonobjc
 		internal init(subset: UnsafePointer<rc_client_subset_t>?) {
 			let lb = subset!.pointee
@@ -43,15 +40,5 @@ public extension Client {
 		
 		let badgeName: String?
 		let badgeURL: URL?
-		
-#if os(OSX)
-	private(set) public lazy var badgeIcon: NSImage? = {
-		if let imageURL = self.badgeURL {
-			return NSImage(contentsOf: imageURL)
-		}
-		return nil
-	}()
-#endif
-
 	}
 }

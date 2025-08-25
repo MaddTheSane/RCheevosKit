@@ -6,15 +6,12 @@
 //
 
 import Foundation
-#if os(OSX)
-import Cocoa
-#endif
 @_implementationOnly import rcheevos
 @_implementationOnly import rcheevos.rc_client
 
 public extension Client {
 	@objc(RCKClientAchievement) @objcMembers
-	final class Achievement: NSObject, Codable, NSSecureCoding {
+	final class Achievement: NSObject, Sendable, Codable, NSSecureCoding {
 		@objc(RCKClientAchievementState)
 		public enum State : UInt8, Sendable, Codable, CustomStringConvertible {
 			/// Unprocessed.
@@ -151,15 +148,6 @@ public extension Client {
 		public let currentIconURL: URL?
 		public let badgeURL: URL?
 		public let badgeLockedURL: URL?
-		
-#if os(OSX)
-	private(set) public lazy var currentIcon: NSImage? = {
-		if let imageURL = self.currentIconURL {
-			return NSImage(contentsOf: imageURL)
-		}
-		return nil
-	}()
-#endif
 		
 		public static var supportsSecureCoding: Bool { return true }
 		

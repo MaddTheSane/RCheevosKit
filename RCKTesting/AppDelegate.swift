@@ -37,11 +37,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ClientDelegate {
 		}
 	}
 	
-	func gameCompleted(client: RcheevosKit.Client) {
+	func gameCompleted(with client: RcheevosKit.Client) {
 		
 	}
 	
-	func serverError(client: RcheevosKit.Client, message: String?, api: String?) {
+	func serverError(from client: RcheevosKit.Client, message: String?, api: String?) {
 		
 	}
 	
@@ -155,7 +155,8 @@ extension AppDelegate: NSOutlineViewDataSource, NSOutlineViewDelegate {
 		} else if let item = item as? Client.Achievement {
 			name = item.title
 			info = item.achievementDescription
-			icon = item.currentIcon
+//			icon = item.currentIcon
+			icon = nil
 		} else {
 			fatalError("We shouldn't be getting here...")
 		}
