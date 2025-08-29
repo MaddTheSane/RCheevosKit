@@ -50,7 +50,7 @@ Provides a wrapper around `rc_client_t`.
 
 ### Logging
 - ``Client/LogLevel``
-- ``Client/enableLogging(level:)``
+- ``Client/enableLogging(for:)``
 
 ### Achievement Tracking
 - ``Client/achievementsList(category:grouping:)``

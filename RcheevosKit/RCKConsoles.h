@@ -176,11 +176,11 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	/// Famicom Disk System
 	RCKConsoleFamicomDiskSystem = 81,
 
-	// Hubs
+	/// Hubs
 	RCKConsoleHubs = 100,
-	// Events
+	/// Events
 	RCKConsoleEvents = 101,
-	// Standalones
+	/// Standalones
 	RCKConsoleStandalone = 102
 };
 

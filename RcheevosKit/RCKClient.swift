@@ -978,7 +978,8 @@ final public class Client: NSObject {
 	
 	/// Sets the logging level. The delegate must implement ``ClientDelegate/client(_:receivedMessage:)``
 	/// in order to receive messages.
-	public func enableLogging(level: LogLevel) {
+	@objc(enableLoggingForLevel:)
+	public func enableLogging(for level: LogLevel) {
 		rc_client_enable_logging(_client, level.rawValue) { message, client in
 			guard let usrDat = rc_client_get_userdata(client), let message else {
 				return
@@ -1015,8 +1016,21 @@ final public class Client: NSObject {
 		
 		public override var hash: Int {
 			var hash = Hasher()
+			hash.combine(gameID)
 			hash.combine(hashString)
 			return hash.finalize()
+		}
+		
+		public override func isEqual(_ object: Any?) -> Bool {
+			if let bObject = object as? HashEntry {
+				return self == bObject
+			}
+			
+			return false
+		}
+		
+		public static func == (lhs: Client.HashEntry, rhs: Client.HashEntry) -> Bool {
+			lhs.hashString == rhs.hashString && lhs.gameID == rhs.gameID
 		}
 	}
 	
@@ -1024,6 +1038,7 @@ final public class Client: NSObject {
 	///
 	/// This request returns a mapping from hashes to the game's unique identifier. A single game may have multiple
 	/// hashes in the case of multi-disc games, or variants that are still compatible with the same achievement set.
+	@objc(fetchHashLibraryForConsole:completionHandler:)
 	public func fetchHashLibrary(for consoleID: RCKConsoleIdentifier) async throws -> [HashEntry] {
 		return try await withCheckedThrowingContinuation { cont in
 			let cb = RCKProgressCallback<[HashEntry]>(callback: cont)
@@ -1063,7 +1078,7 @@ extension RCKError.Code: CustomStringConvertible {
 extension RCKConsoleIdentifier: CustomStringConvertible, CustomDebugStringConvertible, Codable {
 	
 	public var debugDescription: String {
-		return "\(self) (\(self.rawValue))"
+		return "\(self.description) (\(self.rawValue))"
 	}
 }
 
