@@ -1174,17 +1174,17 @@ public extension Client {
 }
 
 internal protocol RcheevosCountedBuffer {
-	associatedtype Value
-	var entries: UnsafeMutablePointer<Value>! { get }
+	associatedtype EntryType
+	var entries: UnsafeMutablePointer<EntryType>! { get }
 	var num_entries: UInt32 { get }
 }
 
 extension rc_client_hash_library_t: RcheevosCountedBuffer {
-	typealias Value = rc_client_hash_library_entry_t
+	typealias EntryType = rc_client_hash_library_entry_t
 }
 
 extension rc_client_all_user_progress_t: RcheevosCountedBuffer {
-	typealias Value = rc_client_all_user_progress_entry_t
+	typealias EntryType = rc_client_all_user_progress_entry_t
 }
 
 internal extension UnsafeBufferPointer {
@@ -1209,7 +1209,7 @@ internal extension UnsafeBufferPointer {
 		self = UnsafeBufferPointer(start: start, count: start.distance(to: toIterate))
 	}
 	
-	init<E>(_ count: E?) where E: RcheevosCountedBuffer, E.Value == Element {
+	init<E>(_ count: E?) where E: RcheevosCountedBuffer, E.EntryType == Element {
 		self = UnsafeBufferPointer(start: count?.entries, count: Int(count?.num_entries ?? 0))
 	}
 }

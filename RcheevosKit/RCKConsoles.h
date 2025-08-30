@@ -9,7 +9,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-//Must match defines in rc_consoles.h!
+/// Console identifiers
+///
+/// - Note: These match defines in *rc_consoles.h*.
 typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	/// Unknown or default console
 	RCKConsoleUnknown = 0,
@@ -19,15 +21,15 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsoleNintendo64 = 2,
 	/// Super Nintendo Entertainment System
 	RCKConsoleSuperNintendo = 3,
-	/// Game Boy
+	/// Nintendo Game Boy
 	RCKConsoleGameBoy = 4,
-	/// Game Boy Advance
+	/// Nintendo Game Boy Advance
 	RCKConsoleGameBoyAdvance = 5,
-	/// Game Boy Color
+	/// Nintendo Game Boy Color
 	RCKConsoleGameBoyColor = 6,
 	/// Nintendo Entertainment System
 	RCKConsoleNintendo = 7,
-	/// PC Engine
+	/// PC Engine, or TurboGrafx-16
 	RCKConsolePCEngine = 8,
 	/// Sega CD
 	RCKConsoleSegaCD = 9,
@@ -73,11 +75,11 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsoleMSX = 29,
 	/// Commodore 64
 	RCKConsoleCommodore64 = 30,
-	/// ZX81
+	/// Sinclair ZX81
 	RCKConsoleZX81 = 31,
-	/// Oric
+	/// Tangerine Oric
 	RCKConsoleOric = 32,
-	// SG1000
+	/// Sega SG1000
 	RCKConsoleSG1000 = 33,
 	/// Commodore VIC 20
 	RCKConsoleVIC20 = 34,
@@ -101,7 +103,7 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsole3DO NS_SWIFT_NAME(threeDO) = 43,
 	/// Colecovision
 	RCKConsoleColecovision = 44,
-	/// Intellivision
+	/// Mattel Intellivision
 	RCKConsoleIntellivision = 45,
 	/// Vectrex
 	RCKConsoleVectrex = 46,
@@ -115,9 +117,9 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsoleAtari5200 = 50,
 	/// Atari 7200
 	RCKConsoleAtari7800 = 51,
-	/// x68k
+	/// Sharp x68k
 	RCKConsoleX68k = 52,
-	/// Wonderswan
+	/// Bandai Wonderswan
 	RCKConsoleWonderswan = 53,
 	/// Cassette Vision
 	RCKConsoleCassetteVision = 54,
@@ -129,9 +131,9 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsoleFairchildChannelF = 57,
 	/// FM Towns
 	RCKConsoleFMTowns = 58,
-	/// ZX Spectrum
+	/// Sinclair ZX Spectrum
 	RCKConsoleZXSpectrum = 59,
-	/// Game & Watch
+	/// Nintendo Game & Watch
 	RCKConsoleGameAndWatch = 60,
 	/// Nokia N-Gage
 	RCKConsoleNokiaNGage = 61,
@@ -149,17 +151,17 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsolePC6000 = 67,
 	/// Sega Pico
 	RCKConsolePico = 68,
-	/// Megaduck
+	/// Megaduck WG-108, "Cougar Boy"
 	RCKConsoleMegaduck = 69,
 	/// Zeebo
 	RCKConsoleZeebo = 70,
 	/// Arduboy
 	RCKConsoleArduboy = 71,
-	/// Wasm4
+	/// WASM-4
 	RCKConsoleWASM4 = 72,
 	/// Arcadia 2001
 	RCKConsoleArcadia2001 = 73,
-	/// Interton VC4000
+	/// Interton Video Computer 4000
 	RCKConsoleIntertonVC4000 = 74,
 	/// Elektor TV Games Computer
 	RCKConsoleElektorTVGamesComputer = 75,
@@ -184,6 +186,9 @@ typedef NS_ENUM(uint32_t, RCKConsoleIdentifier) {
 	RCKConsoleStandalone = 102
 };
 
+/*!
+ * Retrieve the name of the console identifier.
+ */
 FOUNDATION_EXPORT NSString *RCKConsoleGetName(RCKConsoleIdentifier ident) NS_SWIFT_NAME(getter:RCKConsoleIdentifier.description(self:));
 
 typedef NS_ENUM(unsigned char, RCKMemoryType) {
