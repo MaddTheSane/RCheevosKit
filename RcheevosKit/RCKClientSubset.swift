@@ -40,5 +40,17 @@ public extension Client {
 		
 		let badgeName: String?
 		let badgeURL: URL?
+		
+		static func ==(lhs: Client.Subset, rhs: Client.Subset) -> Bool {
+			return lhs.identifier == rhs.identifier && lhs.title == rhs.title
+		}
+		
+		public override func isEqual(_ object: Any?) -> Bool {
+			if let bObject = object as? Subset {
+				return self == bObject
+			}
+			
+			return false
+		}
 	}
 }

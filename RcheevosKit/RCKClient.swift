@@ -734,17 +734,17 @@ final public class Client: NSObject {
 			//TODO: set up some way to cancel log-ins?
 			rc_client_begin_login_with_password(_client, userName, password, { result, errorMessage, _, bCall in
 				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
-				if result == RC_OK {
-					cCall.callback.resume()
-				} else {
+				guard result == RC_OK else {
 					var userInfo = [String: Any]()
 					if let errorMessage {
 						let tmpStr = String(cString: errorMessage)
 						userInfo[NSLocalizedFailureReasonErrorKey] = tmpStr
 						userInfo[NSLocalizedDescriptionKey] = tmpStr
 					}
-					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
+					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result) ?? .apiFailure, userInfo: userInfo))
+					return
 				}
+				cCall.callback.resume()
 			}, aCall)
 		}
 	}
@@ -765,9 +765,7 @@ final public class Client: NSObject {
 			//TODO: set up some way to cancel log-ins?
 			rc_client_begin_login_with_token(_client, userName, token, { result, errorMessage, _, bCall in
 				let cCall: RCKProgressCallback<Void> = Unmanaged.fromOpaque(bCall!).takeRetainedValue()
-				if result == RC_OK {
-					cCall.callback.resume()
-				} else {
+				guard result == RC_OK else {
 					var userInfo = [String: Any]()
 					if let errorMessage {
 						let tmpStr = String(cString: errorMessage)
@@ -775,7 +773,9 @@ final public class Client: NSObject {
 						userInfo[NSLocalizedDescriptionKey] = tmpStr
 					}
 					cCall.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: userInfo))
+					return
 				}
+				cCall.callback.resume()
 			}, aCall)
 		}
 	}
@@ -936,7 +936,7 @@ final public class Client: NSObject {
 						errorUserInfo[NSLocalizedFailureReasonErrorKey] = String(cString: errorMessage)
 						errorUserInfo[NSLocalizedDescriptionKey] = String(cString: errorMessage)
 					}
-					callback2.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result)!, userInfo: errorUserInfo))
+					callback2.callback.resume(throwing: RCKError(RCKError.Code(rawValue: result) ?? .apiFailure, userInfo: errorUserInfo))
 					return
 				}
 				defer {
@@ -1157,10 +1157,10 @@ public extension Client {
 		}
 		
 		public override func isEqual(_ object: Any?) -> Bool {
-			guard let object1 = object as? LeaderboardTracker else {
-				return false
+			if let object1 = object as? LeaderboardTracker {
+				return self == object1
 			}
-			return self == object1
+			return false
 		}
 		
 		public static func == (lhs: LeaderboardTracker, rhs: LeaderboardTracker) -> Bool {
@@ -1209,7 +1209,7 @@ internal extension UnsafeBufferPointer {
 		self = UnsafeBufferPointer(start: start, count: start.distance(to: toIterate))
 	}
 	
-	init<E>(_ count: E?) where E: RcheevosCountedBuffer, E.EntryType == Element {
-		self = UnsafeBufferPointer(start: count?.entries, count: Int(count?.num_entries ?? 0))
+	init<E>(_ val: E?) where E: RcheevosCountedBuffer, E.EntryType == Element {
+		self = UnsafeBufferPointer(start: val?.entries, count: Int(val?.num_entries ?? 0))
 	}
 }

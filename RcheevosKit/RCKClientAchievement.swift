@@ -159,16 +159,16 @@ public extension Client {
 			coder.encode(badgeName as NSString, forKey: Achievement.CodingKeys.badgeName.stringValue)
 			coder.encode(measuredProgress as NSString, forKey: Achievement.CodingKeys.measuredProgress.stringValue)
 			coder.encode(measuredPercent, forKey: Achievement.CodingKeys.measuredPercent.stringValue)
-			coder.encodeConditionalObject(unlockTime as NSDate?, forKey: Achievement.CodingKeys.unlockTime.stringValue)
+			coder.encode(unlockTime as NSDate?, forKey: Achievement.CodingKeys.unlockTime.stringValue)
 
 			coder.encode(Int32(state.rawValue), forKey: Achievement.CodingKeys.state.stringValue)
 			coder.encode(Int32(category.rawValue), forKey: Achievement.CodingKeys.category.stringValue)
 			coder.encode(Int32(bucket.rawValue), forKey: Achievement.CodingKeys.bucket.stringValue)
 			coder.encode(Int32(unlocked.rawValue), forKey: Achievement.CodingKeys.unlocked.stringValue)
 			
-			coder.encodeConditionalObject(currentIconURL as NSURL?, forKey: Achievement.CodingKeys.currentIconURL.stringValue)
-			coder.encodeConditionalObject(badgeURL as NSURL?, forKey: Achievement.CodingKeys.badgeURL.stringValue)
-			coder.encodeConditionalObject(badgeLockedURL as NSURL?, forKey: Achievement.CodingKeys.badgeLockedURL.stringValue)
+			coder.encode(currentIconURL as NSURL?, forKey: Achievement.CodingKeys.currentIconURL.stringValue)
+			coder.encode(badgeURL as NSURL?, forKey: Achievement.CodingKeys.badgeURL.stringValue)
+			coder.encode(badgeLockedURL as NSURL?, forKey: Achievement.CodingKeys.badgeLockedURL.stringValue)
 		}
 		
 		public required init?(coder: NSCoder) {

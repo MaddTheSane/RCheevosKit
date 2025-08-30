@@ -151,7 +151,7 @@ extension AppDelegate: NSOutlineViewDataSource, NSOutlineViewDelegate {
 		if let item = item as? Client.Achievement.Bucket {
 			name = item.label
 			info = ""
-			icon = client.gameInfo()?.image
+			icon = nil
 		} else if let item = item as? Client.Achievement {
 			name = item.title
 			info = item.achievementDescription

@@ -6,9 +6,6 @@
 //
 
 import Foundation
-#if os(OSX)
-import Cocoa
-#endif
 @_implementationOnly import rcheevos
 
 @objc(RCKGameInfo) @objcMembers
@@ -20,15 +17,6 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 	public let badgeName: String
 	
 	public let imageURL: URL?
-	
-#if os(OSX)
-	private(set) public lazy var image: NSImage? = {
-		if let imageURL {
-			return NSImage(contentsOf: imageURL)
-		}
-		return nil
-	}()
-#endif
 	
 	@nonobjc
 	internal init(gi: UnsafePointer<rc_client_game_t>) {
@@ -68,10 +56,10 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 	}
 	
 	public override func isEqual(_ object: Any?) -> Bool {
-		guard let object1 = object as? GameInfo else {
-			return false
+		if let object1 = object as? GameInfo {
+			return self == object1
 		}
-		return self == object1
+		return false
 	}
 	
 	public func encode(with coder: NSCoder) {
@@ -80,7 +68,7 @@ final public class GameInfo: NSObject, NSSecureCoding, Codable {
 		coder.encode(title as NSString, forKey: GameInfo.CodingKeys.title.stringValue)
 		coder.encode(gameHash as NSString, forKey: GameInfo.CodingKeys.gameHash.stringValue)
 		coder.encode(badgeName as NSString, forKey: GameInfo.CodingKeys.badgeName.stringValue)
-		coder.encodeConditionalObject(imageURL as NSURL?, forKey: GameInfo.CodingKeys.imageURL.stringValue)
+		coder.encode(imageURL as NSURL?, forKey: GameInfo.CodingKeys.imageURL.stringValue)
 	}
 	
 	public required init?(coder: NSCoder) {
