@@ -1,0 +1,158 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Aborted" : {
+      "comment" : "Aborted"
+    },
+    "Access denied" : {
+      "comment" : "Access denied"
+    },
+    "API call failed" : {
+      "comment" : "API call failed"
+    },
+    "Buffer not large enough" : {
+      "comment" : "Buffer not large enough",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Buffer is not large enough"
+          }
+        }
+      }
+    },
+    "Duplicated cancel condition" : {
+      "comment" : "Duplicated cancel condition"
+    },
+    "Duplicated progress expression" : {
+      "comment" : "Duplicated progress expression"
+    },
+    "Duplicated start condition" : {
+      "comment" : "Duplicated start condition"
+    },
+    "Duplicated submit condition" : {
+      "comment" : "Duplicated submit condition"
+    },
+    "Duplicated value expression" : {
+      "comment" : "Duplicated value expression"
+    },
+    "Expired token" : {
+      "comment" : "Expired token",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Log-in token expired"
+          }
+        }
+      }
+    },
+    "Hardcore disabled" : {
+      "comment" : "Hardcore disabled"
+    },
+    "Invalid comparison" : {
+      "comment" : "Invalid comparison"
+    },
+    "Invalid condition type" : {
+      "comment" : "Invalid condition type"
+    },
+    "Invalid constant operand" : {
+      "comment" : "Invalid constant operand"
+    },
+    "Invalid credentials" : {
+      "comment" : "Invalid credentials"
+    },
+    "Invalid field in leaderboard" : {
+      "comment" : "Invalid field in leaderboard"
+    },
+    "Invalid flag in value expression" : {
+      "comment" : "Invalid flag in value expression"
+    },
+    "Invalid floating-point operand" : {
+      "comment" : "Invalid floating-point operand"
+    },
+    "Invalid function operand" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid function operand"
+          }
+        }
+      }
+    },
+    "Invalid JSON" : {
+      "comment" : "Invalid JSON"
+    },
+    "Invalid measured target" : {
+      "comment" : "Invalid measured target"
+    },
+    "Invalid memory operand" : {
+      "comment" : "Invalid memory operand"
+    },
+    "Invalid operator" : {
+      "comment" : "Invalid operator"
+    },
+    "Invalid required hits" : {
+      "comment" : "Invalid required hits"
+    },
+    "Invalid state" : {
+      "comment" : "Invalid state"
+    },
+    "Invalid variable name" : {
+      "comment" : "Invalid variable name"
+    },
+    "Login required" : {
+      "comment" : "Login required"
+    },
+    "Missing cancel condition" : {
+      "comment" : "Missing cancel condition"
+    },
+    "Missing display string" : {
+      "comment" : "Missing display string"
+    },
+    "Missing measured flag in value expression" : {
+      "comment" : "Missing measured flag in value expression"
+    },
+    "Missing start condition" : {
+      "comment" : "Missing start condition"
+    },
+    "Missing submit condition" : {
+      "comment" : "Missing submit condition"
+    },
+    "Missing value expression" : {
+      "comment" : "Missing value expression"
+    },
+    "Multiple measured targets" : {
+      "comment" : "Multiple measured targets"
+    },
+    "No game loaded" : {
+      "comment" : "No game loaded"
+    },
+    "No response" : {
+      "comment" : "No response"
+    },
+    "Not found" : {
+      "comment" : "Not found",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Value not found"
+          }
+        }
+      }
+    },
+    "Out of memory" : {
+      "comment" : "Out of memory"
+    },
+    "Unknown variable name" : {
+      "comment" : "Unknown variable name"
+    }
+  },
+  "version" : "1.1"
+}

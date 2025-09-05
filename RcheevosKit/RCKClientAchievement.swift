@@ -159,7 +159,9 @@ public extension Client {
 			coder.encode(badgeName as NSString, forKey: Achievement.CodingKeys.badgeName.stringValue)
 			coder.encode(measuredProgress as NSString, forKey: Achievement.CodingKeys.measuredProgress.stringValue)
 			coder.encode(measuredPercent, forKey: Achievement.CodingKeys.measuredPercent.stringValue)
-			coder.encode(unlockTime as NSDate?, forKey: Achievement.CodingKeys.unlockTime.stringValue)
+			if let unlockTime {
+				coder.encode(unlockTime as NSDate, forKey: Achievement.CodingKeys.unlockTime.stringValue)
+			}
 
 			coder.encode(Int32(state.rawValue), forKey: Achievement.CodingKeys.state.stringValue)
 			coder.encode(Int32(category.rawValue), forKey: Achievement.CodingKeys.category.stringValue)
@@ -224,7 +226,7 @@ public extension Client {
 			do {
 				let preconsole = coder.decodeInt32(forKey: Achievement.CodingKeys.bucket.stringValue)
 				guard let preconsole2 = UInt8(exactly: preconsole),
-					let postConsole = BucketType(rawValue: preconsole2) else {
+					  let postConsole = BucketType(rawValue: preconsole2) else {
 					coder.failWithError(CocoaError(.coderInvalidValue))
 					return nil
 				}

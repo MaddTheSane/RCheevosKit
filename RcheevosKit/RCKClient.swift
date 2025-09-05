@@ -127,9 +127,129 @@ private let _initErrors: () = {
 			let des = rc_error_str(err.code.rawValue)!
 			return String(cString: des)
 		} else if userInfo == NSLocalizedDescriptionKey {
-			//TODO: localize!
-			let des = rc_error_str(err.code.rawValue)!
-			return String(cString: des)
+			let bundle = Bundle(for: Client.self)
+			switch err.code {
+			case .invalidLuaOperand:
+				return NSLocalizedString("Invalid function operand", tableName: "Errors", bundle: bundle, value: "Invalid function operand", comment: "Invalid function operand")
+				
+			case .invalidMemoryOperand:
+				return NSLocalizedString("Invalid memory operand", tableName: "Errors", bundle: bundle, value: "Invalid memory operand", comment: "Invalid memory operand")
+
+			case .invalidConstOperand:
+				return NSLocalizedString("Invalid constant operand", tableName: "Errors", bundle: bundle, value: "Invalid constant operand", comment: "Invalid constant operand")
+				
+			case .invalidFPOperand:
+				return NSLocalizedString("Invalid floating-point operand", tableName: "Errors", bundle: bundle, value: "Invalid floating-point operand", comment: "Invalid floating-point operand")
+
+			case .invalidConditionType:
+				return NSLocalizedString("Invalid condition type", tableName: "Errors", bundle: bundle, value: "Invalid condition type", comment: "Invalid condition type")
+				
+			case .invalidOperator:
+				return NSLocalizedString("Invalid operator", tableName: "Errors", bundle: bundle, value: "Invalid operator", comment: "Invalid operator")
+
+			case .invalidRequiredHits:
+				return NSLocalizedString("Invalid required hits", tableName: "Errors", bundle: bundle, value: "Invalid required hits", comment: "Invalid required hits")
+				
+			case .duplicatedStart:
+				return NSLocalizedString("Duplicated start condition", tableName: "Errors", bundle: bundle, value: "Duplicated start condition", comment: "Duplicated start condition")
+				
+			case .duplicatedCancel:
+				return NSLocalizedString("Duplicated cancel condition", tableName: "Errors", bundle: bundle, value: "Duplicated cancel condition", comment: "Duplicated cancel condition")
+				
+			case .duplicatedSubmit:
+				return NSLocalizedString("Duplicated submit condition", tableName: "Errors", bundle: bundle, value: "Duplicated submit condition", comment: "Duplicated submit condition")
+				
+			case .duplicatedValue:
+				return NSLocalizedString("Duplicated value expression", tableName: "Errors", bundle: bundle, value: "Duplicated value expression", comment: "Duplicated value expression")
+				
+			case .duplicatedProgress:
+				return NSLocalizedString("Duplicated progress expression", tableName: "Errors", bundle: bundle, value: "Duplicated progress expression", comment: "Duplicated progress expression")
+
+			case .missingStart:
+				return NSLocalizedString("Missing start condition", tableName: "Errors", bundle: bundle, value: "Missing start condition", comment: "Missing start condition")
+				
+			case .missingCancel:
+				return NSLocalizedString("Missing cancel condition", tableName: "Errors", bundle: bundle, value: "Missing cancel condition", comment: "Missing cancel condition")
+				
+			case .missingSubmit:
+				return NSLocalizedString("Missing submit condition", tableName: "Errors", bundle: bundle, value: "Missing submit condition", comment: "Missing submit condition")
+				
+			case .missingValue:
+				return NSLocalizedString("Missing value expression", tableName: "Errors", bundle: bundle, value: "Missing value expression", comment: "Missing value expression")
+				
+			case .invalidLeaderboardField:
+				return NSLocalizedString("Invalid field in leaderboard", tableName: "Errors", bundle: bundle, value: "Invalid field in leaderboard", comment: "Invalid field in leaderboard")
+
+			case .missingDisplayString:
+				return NSLocalizedString("Missing display string", tableName: "Errors", bundle: bundle, value: "Missing display string", comment: "Missing display string")
+				
+			case .outOfMemory:
+				return NSLocalizedString("Out of memory", tableName: "Errors", bundle: bundle, value: "Out of memory", comment: "Out of memory")
+				
+			case .invalidValueFlag:
+				return NSLocalizedString("Invalid flag in value expression", tableName: "Errors", bundle: bundle, value: "Invalid flag in value expression", comment: "Invalid flag in value expression")
+				
+			case .missingValueMeasured:
+				return NSLocalizedString("Missing measured flag in value expression", tableName: "Errors", bundle: bundle, value: "Missing measured flag in value expression", comment: "Missing measured flag in value expression")
+				
+			case .multipleMeasured:
+				return NSLocalizedString("Multiple measured targets", tableName: "Errors", bundle: bundle, value: "Multiple measured targets", comment: "Multiple measured targets")
+				
+			case .invalidMeasuredTarget:
+				return NSLocalizedString("Invalid measured target", tableName: "Errors", bundle: bundle, value: "Invalid measured target", comment: "Invalid measured target")
+				
+			case .invalidComparison:
+				return NSLocalizedString("Invalid comparison", tableName: "Errors", bundle: bundle, value: "Invalid comparison", comment: "Invalid comparison")
+				
+			case .invalidState:
+				return NSLocalizedString("Invalid state", tableName: "Errors", bundle: bundle, value: "Invalid state", comment: "Invalid state")
+				
+			case .invalidJSON:
+				return NSLocalizedString("Invalid JSON", tableName: "Errors", bundle: bundle, value: "Invalid JSON", comment: "Invalid JSON")
+				
+			case .apiFailure:
+				return NSLocalizedString("API call failed", tableName: "Errors", bundle: bundle, value: "API call failed", comment: "API call failed")
+				
+			case .loginRequired:
+				return NSLocalizedString("Login required", tableName: "Errors", bundle: bundle, value: "Login required", comment: "Login required")
+				
+			case .noGameLoaded:
+				return NSLocalizedString("No game loaded", tableName: "Errors", bundle: bundle, value: "No game loaded", comment: "No game loaded")
+				
+			case .hardcoreDisabled:
+				return NSLocalizedString("Hardcore disabled", tableName: "Errors", bundle: bundle, value: "Hardcore disabled", comment: "Hardcore disabled")
+				
+			case .aborted:
+				return NSLocalizedString("Aborted", tableName: "Errors", bundle: bundle, value: "Aborted", comment: "Aborted")
+				
+			case .noResponse:
+				return NSLocalizedString("No response", tableName: "Errors", bundle: bundle, value: "No response", comment: "No response")
+				
+			case .accessDenied:
+				return NSLocalizedString("Access denied", tableName: "Errors", bundle: bundle, value: "Access denied", comment: "Access denied")
+				
+			case .invalidCredentials:
+				return NSLocalizedString("Invalid credentials", tableName: "Errors", bundle: bundle, value: "Invalid credentials", comment: "Invalid credentials")
+				
+			case .expiredToken:
+				return NSLocalizedString("Expired token", tableName: "Errors", bundle: bundle, value: "Log-in token expired", comment: "Expired token")
+				
+			case .insufficientBuffer:
+				return NSLocalizedString("Buffer not large enough", tableName: "Errors", bundle: bundle, value: "Buffer is not large enough", comment: "Buffer not large enough")
+				
+			case .invalidVariableName:
+				return NSLocalizedString("Invalid variable name", tableName: "Errors", bundle: bundle, value: "Invalid variable name", comment: "Invalid variable name")
+				
+			case .unknownVariableName:
+				return NSLocalizedString("Unknown variable name", tableName: "Errors", bundle: bundle, value: "Unknown variable name", comment: "Unknown variable name")
+				
+			case .notFound:
+				return NSLocalizedString("Not found", tableName: "Errors", bundle: bundle, value: "Value not found", comment: "Not found")
+				
+			@unknown default:
+				let des = rc_error_str(err.code.rawValue)!
+				return String(cString: des)
+			}
 		}
 		
 		return nil
@@ -406,6 +526,11 @@ final public class Client: NSObject {
 	/// is not being called because emulation is paused.
 	public func idling() {
 		rc_client_idle(_client)
+	}
+	
+	/// Determines if there are any active achievements/leaderboards/rich presence that need processing.
+	public var isProcessingRequired: Bool {
+		return rc_client_is_processing_required(_client) != 0
 	}
 	
 	// MARK: - Rich Presence
